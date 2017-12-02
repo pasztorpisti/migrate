@@ -1,0 +1,361 @@
+package main
+
+import (
+	"flag"
+	"github.com/pasztorpisti/migrate"
+	"log"
+	"os"
+	"fmt"
+)
+
+const usage = `Usage: migrate [migrate_options] <command> [command_options] [command_args]
+
+Migrate Options:
+  -config <config_file>
+            The location of the config file.
+            Default: %s
+  -db <db_name>
+            Select an environment specific section of the config file.
+            The <db_name> is user defined (dev, prod, test, etc...).
+            Default: %s
+
+Commands:
+  new       Create a new migration file with ID=<current_unix_time>.
+  init      Create the migrations table in the DB if not exists.
+  goto      Go to a specific version of the DB schema by backward migrating
+            newer migrations and forward migrating older ones.
+  plan      Print the plan that would be executed by a goto command.
+  status    Print info about the current state of the migrations.
+  hack      Manipulate a single migration step. Useful for troubleshooting.
+
+Use 'migrate <command> -help' for more info about a command.
+`
+
+const (
+	defaultConfigFile = "migrate.yml"
+	defaultDB = "dev"
+)
+
+type migrateOptions struct {
+	ConfigFile string
+	Env        string
+}
+
+var commands = map[string]func(opts *migrateOptions, args []string) error{
+	"new":    cmdNew,
+	"init":   cmdInit,
+	"goto":   cmdGoto,
+	"plan":   cmdPlan,
+	"status": cmdStatus,
+	"hack":   cmdHack,
+}
+
+func main() {
+	log.SetFlags(0)
+
+	var opts migrateOptions
+	flag.Usage = func() {
+		log.Printf(usage, defaultConfigFile, defaultDB)
+	}
+	flag.StringVar(&opts.ConfigFile, "config", defaultConfigFile, "")
+	flag.StringVar(&opts.Env, "db", defaultDB, "")
+	flag.Parse()
+
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	args := flag.Args()
+	cmd := args[0]
+	cmdFunc, ok := commands[cmd]
+	if !ok {
+		log.Printf("Invalid command: %s", cmd)
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	err := cmdFunc(&opts, args[1:])
+	if err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+}
+
+func printf(format string, args ...interface{}) {
+	fmt.Printf(format, args...)
+}
+
+const newUsage = `Usage: migrate new [-space <space_char>] [-noext] [description]
+
+Creates a new migration file in the migration_dir specified in the config file.
+
+The new filename is CONCATENATE(current_unix_time, space, description, ".sql").
+After generating the filename spaces are replaced with '_'.
+You can change '_' to somethinge else with the -space option.
+You can prevent appending the ".sql" extension with the -noext option.
+
+E.g.:
+The following command: migrate new "my first migration"
+Results in something like: 1512307720_my_first_migration.sql
+
+After creation you can rename the file to whatever you like before forward
+migrating it. After forward migration you mustn't rename it.
+The only requirement is that it has to start with a non-negative integer
+that is uniqe among your migration files.
+E.g.: "0", "432134", "1.migration" and "1.sql" are all valid filenames.
+
+Options:
+`
+
+func cmdNew(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("new", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(newUsage)
+		fs.PrintDefaults()
+	}
+	space := fs.String("space", "_", "Character to be used as a safe space in migration filenames.")
+	noext := fs.Bool("noext", false, "Don't append the '.sql' extension.")
+	fs.Parse(args)
+
+	if fs.NArg() > 1 {
+		log.Printf("Unwanted extra arguments: %q", fs.Args()[1:])
+		fs.Usage()
+		os.Exit(1)
+	}
+	description := ""
+	if fs.NArg() >= 1 {
+		description = fs.Arg(0)
+	}
+
+	return migrate.CmdNew(&migrate.CmdNewInput{
+		Printf: printf,
+		ConfigFile: opts.ConfigFile,
+		Env:        opts.Env,
+		Space:      *space,
+		NoExt:      *noext,
+		Description: description,
+	})
+}
+
+const initUsage = `Usage: migrate init
+
+Creates the migration table if it hasn't yet been created.
+Issuing an init command on an already initialised DB is a harmless no-op.
+`
+
+func cmdInit(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(initUsage)
+		fs.PrintDefaults()
+	}
+	fs.Parse(args)
+
+	if fs.NArg() != 0 {
+		log.Printf("Unwanted extra arguments: %q", fs.Args())
+		fs.Usage()
+		os.Exit(1)
+	}
+
+	return migrate.CmdInit(&migrate.CmdInitInput{
+		ConfigFile: opts.ConfigFile,
+		Env: opts.Env,
+	})
+}
+
+const gotoUsage = `Usage: migrate goto [-quiet] <migration_id>
+
+Backward migrate everything that is newer than <migration_id> and
+forward migrate <migration_id> along with everything that is older.
+
+Options:
+`
+
+const gotoUsageArgs = `
+Args:
+  <migration_id>
+        This is either the name of a migration file or it's integer prefix.
+        It can also be one of the following special values:
+
+        initial      Backward migrates everything.
+        latest       Forward migrates everything.
+`
+
+func cmdGoto(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("goto", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(gotoUsage)
+		fs.PrintDefaults()
+		log.Print(gotoUsageArgs)
+	}
+	quiet := fs.Bool("quiet", false, "Log only a brief summary.")
+	fs.Parse(args)
+
+	if fs.NArg() != 1 {
+		if fs.NArg() > 1 {
+			log.Printf("Unwanted extra arguments: %q", fs.Args()[1:])
+		}
+		fs.Usage()
+		os.Exit(1)
+	}
+	migrationID := fs.Arg(0)
+
+	return migrate.CmdGoto(&migrate.CmdGotoInput{
+		Printf: printf,
+		ConfigFile:  opts.ConfigFile,
+		Env:         opts.Env,
+		MigrationID: migrationID,
+		Quiet:       *quiet,
+	})
+}
+
+const planUsage = `Usage: migrate plan [-sql] [-meta] <migration_id>
+
+Print a plan without modifying the database.
+
+Options:
+`
+
+const planUsageArgs = `
+Args:
+  <migration_id>
+        This is either the name of a migration file or it's integer prefix.
+        It can also be one of the following special values:
+
+        initial      Backward migrates everything.
+        latest       Forward migrates everything.
+
+`
+
+func cmdPlan(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("plan", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(planUsage)
+		fs.PrintDefaults()
+		log.Print(planUsageArgs)
+	}
+	sql := fs.Bool("sql", false, "Log the migration SQL statements (those that modify user tables).")
+	meta := fs.Bool("meta", false, "Log all SQL statements including those that modify the migrations table. Implies -sql.")
+	fs.Parse(args)
+
+	if fs.NArg() != 1 {
+		if fs.NArg() > 1 {
+			log.Printf("Unwanted extra arguments: %q", fs.Args()[1:])
+		}
+		fs.Usage()
+		os.Exit(1)
+	}
+	migrationID := fs.Arg(0)
+
+	return migrate.CmdPlan(&migrate.CmdPlanInput{
+		Printf:      printf,
+		ConfigFile:  opts.ConfigFile,
+		Env:         opts.Env,
+		MigrationID: migrationID,
+		PrintSQL:    *sql,
+		PrintMetaSQL: *meta,
+	})
+}
+
+const statusUsage = `Usage: migrate status
+
+Print the status of the migrations.
+`
+
+func cmdStatus(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("status", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(statusUsage)
+	}
+	fs.Parse(args)
+
+	if fs.NArg() != 0 {
+		log.Printf("Unwanted extra arguments: %q", fs.Args())
+		fs.Usage()
+		os.Exit(1)
+	}
+
+	return migrate.CmdStatus(&migrate.CmdStatusInput{
+		Printf: printf,
+		ConfigFile: opts.ConfigFile,
+		Env:        opts.Env,
+	})
+}
+
+const hackUsage = `Usage: migrate hack [-force] [-useronly|-metaonly] <forward|backward> <migration_id>
+
+Backward- of forward-migrate a single step specified by <migration_id>.
+Useful for troubleshooting.
+
+It executes two set of SQL statements:
+
+1. SQL that forward or backward migrates user tables.
+2. SQL that updates the migration metadata accordingly.
+
+You can use the -useronly or -metaonly options to execute only one of these.
+
+Options:
+`
+
+const hackUsageArgs = `
+Args:
+  <forward|backward>
+        Select the direction in which the given <migration_id> will be migrated.
+
+  <migration_id>
+        This is either the name of a migration file or it's integer prefix.
+
+`
+
+func cmdHack(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("hack", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(hackUsage)
+		fs.PrintDefaults()
+		log.Print(hackUsageArgs)
+	}
+	force := fs.Bool("force", false, "Skip checking the migration metadata for the current state of <migration_id>.")
+	useronly := fs.Bool("useronly", false, "Skip the execution of SQL that modifies the migrations table.")
+	metaonly := fs.Bool("metaonly", false, "Skip the execution of SQL that modifies the user tables.")
+	fs.Parse(args)
+
+	if fs.NArg() != 2 {
+		if fs.NArg() > 2 {
+			log.Printf("Unwanted extra arguments: %q", fs.Args()[1:])
+		}
+		fs.Usage()
+		os.Exit(1)
+	}
+	direction := fs.Arg(0)
+	migrationID := fs.Arg(1)
+
+	var forward bool
+	switch direction {
+	case "forward":
+		forward = true
+	case "backward":
+		forward = false
+	default:
+		log.Printf("Direction has to be forward or backward, got %q", direction)
+		fs.Usage()
+		os.Exit(1)
+	}
+
+	if *useronly && *metaonly {
+		log.Print("The -useronly and -metaonly options are exclusive.")
+		fs.Usage()
+		os.Exit(1)
+	}
+
+	return migrate.CmdHack(&migrate.CmdHackInput{
+		Printf: printf,
+		ConfigFile:  opts.ConfigFile,
+		Env:         opts.Env,
+		Forward: forward,
+		MigrationID: migrationID,
+		Force:       *force,
+		UserOnly:    *useronly,
+		MetaOnly:    *metaonly,
+	})
+}

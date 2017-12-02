@@ -1,0 +1,5 @@
+# IntelliJ IDE project files
+/.idea/
+
+# executable created by `go build`
+/cmd/migrate/migrate
