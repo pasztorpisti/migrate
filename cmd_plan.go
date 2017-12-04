@@ -5,29 +5,29 @@ import "fmt"
 type CmdPlanInput struct {
 	Printf       PrintfFunc
 	ConfigFile   string
-	Env          string
+	DB           string
 	MigrationID  string
 	PrintSQL     bool
 	PrintMetaSQL bool
 }
 
 func CmdPlan(input *CmdPlanInput) error {
-	env, err := loadAndValidateEnv(input.ConfigFile, input.Env)
+	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
 	if err != nil {
 		return err
 	}
 
-	driver, err := GetDriver(env.Driver)
+	driver, err := GetDriver(cfg.Driver)
 	if err != nil {
 		return err
 	}
 
-	db, err := driver.Open(env.DataSource)
+	db, err := driver.Open(cfg.DataSource)
 	if err != nil {
 		return err
 	}
 
-	mdb, err := driver.NewMigrationDB(env.MigrationsTable)
+	mdb, err := driver.NewMigrationDB(cfg.MigrationsTable)
 	if err != nil {
 		return err
 	}
@@ -40,9 +40,9 @@ func CmdPlan(input *CmdPlanInput) error {
 		forwardNames[i] = m.Name
 	}
 
-	entries, err := LoadMigrationsDir(env.MigrationSource)
+	entries, err := LoadMigrationsDir(cfg.MigrationSource)
 	if err != nil {
-		return fmt.Errorf("error loading migrations dir %q: %s", env.MigrationSource, err)
+		return fmt.Errorf("error loading migrations dir %q: %s", cfg.MigrationSource, err)
 	}
 	migrations, err := LoadMigrationFiles(entries)
 	if err != nil {

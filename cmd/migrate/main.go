@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/pasztorpisti/migrate"
 	"log"
 	"os"
-	"fmt"
 )
 
 const usage = `Usage: migrate [migrate_options] <command> [command_options] [command_args]
@@ -14,9 +14,9 @@ Migrate Options:
   -config <config_file>
             The location of the config file.
             Default: %s
-  -db <db_name>
-            Select an environment specific section of the config file.
-            The <db_name> is user defined (dev, prod, test, etc...).
+  -db <db_config>
+            Select a section from the config file.
+            The <db_config> is user defined (dev, test, prod, etc...).
             Default: %s
 
 Commands:
@@ -33,12 +33,12 @@ Use 'migrate <command> -help' for more info about a command.
 
 const (
 	defaultConfigFile = "migrate.yml"
-	defaultDB = "dev"
+	defaultDB         = "dev"
 )
 
 type migrateOptions struct {
 	ConfigFile string
-	Env        string
+	DB         string
 }
 
 var commands = map[string]func(opts *migrateOptions, args []string) error{
@@ -58,7 +58,7 @@ func main() {
 		log.Printf(usage, defaultConfigFile, defaultDB)
 	}
 	flag.StringVar(&opts.ConfigFile, "config", defaultConfigFile, "")
-	flag.StringVar(&opts.Env, "db", defaultDB, "")
+	flag.StringVar(&opts.DB, "db", defaultDB, "")
 	flag.Parse()
 
 	if flag.NArg() == 0 {
@@ -86,7 +86,7 @@ func printf(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 }
 
-const newUsage = `Usage: migrate new [-space <space_char>] [-noext] [description]
+const newUsage = `Usage: migrate new [-space <space>] [-noext] [description]
 
 Creates a new migration file in the migration_dir specified in the config file.
 
@@ -104,6 +104,9 @@ migrating it. After forward migration you mustn't rename it.
 The only requirement is that it has to start with a non-negative integer
 that is uniqe among your migration files.
 E.g.: "0", "432134", "1.migration" and "1.sql" are all valid filenames.
+
+You don't have to pad the numbers with leading zeros to ensure correct ordering
+because sorting uses the parsed integer values instead of the filenames.
 
 Options:
 `
@@ -129,11 +132,11 @@ func cmdNew(opts *migrateOptions, args []string) error {
 	}
 
 	return migrate.CmdNew(&migrate.CmdNewInput{
-		Printf: printf,
-		ConfigFile: opts.ConfigFile,
-		Env:        opts.Env,
-		Space:      *space,
-		NoExt:      *noext,
+		Printf:      printf,
+		ConfigFile:  opts.ConfigFile,
+		DB:          opts.DB,
+		Space:       *space,
+		NoExt:       *noext,
 		Description: description,
 	})
 }
@@ -160,7 +163,7 @@ func cmdInit(opts *migrateOptions, args []string) error {
 
 	return migrate.CmdInit(&migrate.CmdInitInput{
 		ConfigFile: opts.ConfigFile,
-		Env: opts.Env,
+		DB:         opts.DB,
 	})
 }
 
@@ -189,7 +192,7 @@ func cmdGoto(opts *migrateOptions, args []string) error {
 		fs.PrintDefaults()
 		log.Print(gotoUsageArgs)
 	}
-	quiet := fs.Bool("quiet", false, "Log only a brief summary.")
+	quiet := fs.Bool("quiet", false, "Don't log migration steps.")
 	fs.Parse(args)
 
 	if fs.NArg() != 1 {
@@ -202,9 +205,9 @@ func cmdGoto(opts *migrateOptions, args []string) error {
 	migrationID := fs.Arg(0)
 
 	return migrate.CmdGoto(&migrate.CmdGotoInput{
-		Printf: printf,
+		Printf:      printf,
 		ConfigFile:  opts.ConfigFile,
-		Env:         opts.Env,
+		DB:          opts.DB,
 		MigrationID: migrationID,
 		Quiet:       *quiet,
 	})
@@ -249,11 +252,11 @@ func cmdPlan(opts *migrateOptions, args []string) error {
 	migrationID := fs.Arg(0)
 
 	return migrate.CmdPlan(&migrate.CmdPlanInput{
-		Printf:      printf,
-		ConfigFile:  opts.ConfigFile,
-		Env:         opts.Env,
-		MigrationID: migrationID,
-		PrintSQL:    *sql,
+		Printf:       printf,
+		ConfigFile:   opts.ConfigFile,
+		DB:           opts.DB,
+		MigrationID:  migrationID,
+		PrintSQL:     *sql,
 		PrintMetaSQL: *meta,
 	})
 }
@@ -277,9 +280,9 @@ func cmdStatus(opts *migrateOptions, args []string) error {
 	}
 
 	return migrate.CmdStatus(&migrate.CmdStatusInput{
-		Printf: printf,
+		Printf:     printf,
 		ConfigFile: opts.ConfigFile,
-		Env:        opts.Env,
+		DB:         opts.DB,
 	})
 }
 
@@ -349,10 +352,10 @@ func cmdHack(opts *migrateOptions, args []string) error {
 	}
 
 	return migrate.CmdHack(&migrate.CmdHackInput{
-		Printf: printf,
+		Printf:      printf,
 		ConfigFile:  opts.ConfigFile,
-		Env:         opts.Env,
-		Forward: forward,
+		DB:          opts.DB,
+		Forward:     forward,
 		MigrationID: migrationID,
 		Force:       *force,
 		UserOnly:    *useronly,

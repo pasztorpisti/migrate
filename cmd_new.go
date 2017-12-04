@@ -12,21 +12,21 @@ import (
 type CmdNewInput struct {
 	Printf      PrintfFunc
 	ConfigFile  string
-	Env         string
+	DB          string
 	Space       string
 	NoExt       bool
 	Description string
 }
 
 func CmdNew(input *CmdNewInput) error {
-	env, err := loadAndValidateEnv(input.ConfigFile, input.Env)
+	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
 	if err != nil {
 		return err
 	}
 
-	entries, err := LoadMigrationsDir(env.MigrationSource)
+	entries, err := LoadMigrationsDir(cfg.MigrationSource)
 	if err != nil {
-		return fmt.Errorf("error loading migrations dir %q: %s", env.MigrationSource, err)
+		return fmt.Errorf("error loading migrations dir %q: %s", cfg.MigrationSource, err)
 	}
 
 	ids := make(map[int64]struct{}, len(entries))
@@ -50,7 +50,7 @@ func CmdNew(input *CmdNewInput) error {
 		filename += ".sql"
 	}
 	filename = strings.Replace(filename, " ", input.Space, -1)
-	path := filepath.Join(env.MigrationSource, filename)
+	path := filepath.Join(cfg.MigrationSource, filename)
 
 	err = ioutil.WriteFile(path, []byte(migrationTemplate), 0644)
 	if err != nil {

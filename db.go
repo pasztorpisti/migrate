@@ -5,12 +5,12 @@ import (
 	"errors"
 )
 
-// Tx supports (fakes) embedded transactions.
+// TX supports (fakes) embedded transactions.
 // Only the top level transaction performs real commit/rollback on the DB.
 // If a child transaction rolls back then the parents aren't allowed to commit,
 // they have to roll back as well.
 // Note: the current implementation isn't goroutine safe.
-type Tx interface {
+type TX interface {
 	DB
 	Commit() error
 	Rollback() error
@@ -19,7 +19,7 @@ type Tx interface {
 type DB interface {
 	Querier
 	Execer
-	BeginTx() (Tx, error)
+	BeginTX() (TX, error)
 }
 
 type Querier interface {
@@ -38,7 +38,7 @@ type dbWrapper struct {
 	*sql.DB
 }
 
-func (o dbWrapper) BeginTx() (Tx, error) {
+func (o dbWrapper) BeginTX() (TX, error) {
 	tx, err := o.DB.Begin()
 	if err != nil {
 		return nil, err
@@ -52,9 +52,9 @@ type txWrapper struct {
 	*txChildren
 }
 
-func (o *txWrapper) BeginTx() (Tx, error) {
+func (o *txWrapper) BeginTX() (TX, error) {
 	w := &recursiveTxWrapper{
-		Tx:         o,
+		TX:         o,
 		txChildren: newTxChildren(),
 		parent:     o,
 	}
@@ -62,15 +62,15 @@ func (o *txWrapper) BeginTx() (Tx, error) {
 }
 
 type recursiveTxWrapper struct {
-	Tx
+	TX
 	*txChildren
 	parent   parentTx
 	finished bool
 }
 
-func (o *recursiveTxWrapper) BeginTx() (Tx, error) {
+func (o *recursiveTxWrapper) BeginTX() (TX, error) {
 	w := &recursiveTxWrapper{
-		Tx:         o,
+		TX:         o,
 		txChildren: newTxChildren(),
 		parent:     o,
 	}
@@ -96,7 +96,7 @@ func (o *recursiveTxWrapper) Rollback() error {
 }
 
 type parentTx interface {
-	Tx
+	TX
 	childCommit(*recursiveTxWrapper)
 	childRollback(*recursiveTxWrapper)
 }

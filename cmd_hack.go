@@ -9,7 +9,7 @@ import (
 type CmdHackInput struct {
 	Printf      PrintfFunc
 	ConfigFile  string
-	Env         string
+	DB          string
 	Forward     bool
 	MigrationID string
 
@@ -27,22 +27,22 @@ func CmdHack(input *CmdHackInput) error {
 		return fmt.Errorf("hack doesn't accept %q or %q as the migration ID", Initial, Latest)
 	}
 
-	env, err := loadAndValidateEnv(input.ConfigFile, input.Env)
+	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
 	if err != nil {
 		return err
 	}
 
-	driver, err := GetDriver(env.Driver)
+	driver, err := GetDriver(cfg.Driver)
 	if err != nil {
 		return err
 	}
 
-	db, err := driver.Open(env.DataSource)
+	db, err := driver.Open(cfg.DataSource)
 	if err != nil {
 		return err
 	}
 
-	mdb, err := driver.NewMigrationDB(env.MigrationsTable)
+	mdb, err := driver.NewMigrationDB(cfg.MigrationsTable)
 	if err != nil {
 		return err
 	}
@@ -62,9 +62,9 @@ func CmdHack(input *CmdHackInput) error {
 		}
 	}
 
-	entries, err := LoadMigrationsDir(env.MigrationSource)
+	entries, err := LoadMigrationsDir(cfg.MigrationSource)
 	if err != nil {
-		return fmt.Errorf("error loading migrations dir %q: %s", env.MigrationSource, err)
+		return fmt.Errorf("error loading migrations dir %q: %s", cfg.MigrationSource, err)
 	}
 	entryMap := make(map[string]*MigrationDirEntry, len(entries))
 	for _, e := range entries {

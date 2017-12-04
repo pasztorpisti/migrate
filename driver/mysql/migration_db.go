@@ -1,10 +1,10 @@
 package mysql
 
 import (
-	"github.com/pasztorpisti/migrate"
 	"fmt"
-	"time"
+	"github.com/pasztorpisti/migrate"
 	"strings"
+	"time"
 )
 
 type migrationDB struct {
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS %s (
 
 func (o *migrationDB) CreateTableIfNotExists() (migrate.Step, error) {
 	return &migrate.SQLExecStep{
-		Query: fmt.Sprintf(createTableQuery, o.tableName),
+		Query:  fmt.Sprintf(createTableQuery, o.tableName),
 		IsMeta: true,
 	}, nil
 }
@@ -63,16 +63,16 @@ const forwardMigrateQuery = `INSERT INTO %s (name, time) VALUES (?, ?) ON DUPLIC
 func (o *migrationDB) ForwardMigrate(migrationName string) (migrate.Step, error) {
 	now := time.Now().UTC()
 	return &migrate.SQLExecStep{
-		Query: fmt.Sprintf(forwardMigrateQuery, o.tableName),
-		Args: []interface{}{migrationName, now, now},
+		Query:  fmt.Sprintf(forwardMigrateQuery, o.tableName),
+		Args:   []interface{}{migrationName, now, now},
 		IsMeta: true,
 	}, nil
 }
 
 func (o *migrationDB) BackwardMigrate(migrationName string) (migrate.Step, error) {
 	return &migrate.SQLExecStep{
-		Query: fmt.Sprintf(`DELETE FROM %s WHERE name = ?;`, o.tableName),
-		Args: []interface{}{migrationName},
+		Query:  fmt.Sprintf(`DELETE FROM %s WHERE name = ?;`, o.tableName),
+		Args:   []interface{}{migrationName},
 		IsMeta: true,
 	}, nil
 }

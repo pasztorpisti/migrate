@@ -1,10 +1,10 @@
 package postgres
 
 import (
-	_ "github.com/lib/pq"
-	"github.com/pasztorpisti/migrate"
 	"database/sql"
 	"fmt"
+	_ "github.com/lib/pq"
+	"github.com/pasztorpisti/migrate"
 )
 
 func init() {

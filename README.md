@@ -1,6 +1,6 @@
 # migrate
 
-Cross-platform SQL migration tool (cli).
+Cross-platform SQL schema migration tool (cli).
 Currently supports postgresql and mysql.
 
 It is written in golang so it can be used easily as a go migration library but
@@ -112,9 +112,9 @@ You have a list of migrations with some kind of strict ordering.
 This tool orders the migrations by their numeric ID: older migrations have
 smaller numeric IDs.
 
-This tool stores a "bool flag" in the database for each migration to remember
-which one has been applied (forward migrated). In the below example `[X]` means
-that the bool flag for the given migration is set (forward migrated):
+A "bool flag" is stored in the database for each migration to remember
+which one has been applied (forward migrated).
+In the below example `[X]` means that the bool flag for the given migration is set:
 
 ```
 $ migrate status

@@ -2,26 +2,26 @@ package migrate
 
 type CmdInitInput struct {
 	ConfigFile string
-	Env        string
+	DB         string
 }
 
 func CmdInit(input *CmdInitInput) error {
-	env, err := loadAndValidateEnv(input.ConfigFile, input.Env)
+	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
 	if err != nil {
 		return err
 	}
 
-	driver, err := GetDriver(env.Driver)
+	driver, err := GetDriver(cfg.Driver)
 	if err != nil {
 		return err
 	}
 
-	db, err := driver.Open(env.DataSource)
+	db, err := driver.Open(cfg.DataSource)
 	if err != nil {
 		return err
 	}
 
-	mdb, err := driver.NewMigrationDB(env.MigrationsTable)
+	mdb, err := driver.NewMigrationDB(cfg.MigrationsTable)
 	if err != nil {
 		return err
 	}

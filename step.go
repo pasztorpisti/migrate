@@ -91,7 +91,7 @@ func (o TransactionIfAllowed) Execute(ctx ExecCtx) (retErr error) {
 	}
 
 	if o.AllowsTransaction() {
-		tx, err := ctx.DB.BeginTx()
+		tx, err := ctx.DB.BeginTX()
 		if err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func (o TransactionIfAllowed) Print(ctx PrintCtx) {
 		return
 	}
 
-	doPrint := ctx.PrintSQL && ctx.PrintMetaSQL && o.AllowsTransaction()
+	doPrint := ctx.PrintMetaSQL && o.AllowsTransaction()
 	if doPrint {
 		ctx.Printf("BEGIN;\n")
 	}
