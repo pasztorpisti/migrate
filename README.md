@@ -31,17 +31,21 @@ dev:
   driver: postgres
 
   # DB driver specific connection parameters.
-  data_source: user=steve host=localhost port=5432 dbname=postgres sslmode=disable
+  # In case of mysql it looks like this: user@tcp(localhost:3306)/db_name
+  #
+  # Mysql data_source format: https://github.com/go-sql-driver/mysql#dsn-data-source-name
+  # Postgres data_source format: https://godoc.org/github.com/lib/pq
+  data_source: postgres://steve@localhost:5432/postgres?sslmode=disable
 
-  # Currently the only supported source type is dir://.
-  # Absolute directory: dir:///dir1/dir2
-  # Directory relative to the parent dir of this config: dir://dir1/dir2
-  migration_source: dir://migrations
+  # migration_source is a relative or absolute path to the directory that
+  # contains the migration files. If it is a relative path then it is
+  # relative to the parent dir of this config file.
+  migration_source: migrations
 
 prod:
   driver: postgres
-  data_source: user=service host=localhost port=5432 dbname=postgres
-  migration_source: dir://migrations
+  data_source: postgres://service@localhost:5432/postgres
+  migration_source: migrations
 ```
 
 The above config defines two database settings: `dev` and `prod`.

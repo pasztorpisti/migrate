@@ -6,19 +6,14 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 )
 
 type dbConfig struct {
 	Driver          string `yaml:"driver"`
 	DataSource      string `yaml:"data_source"`
 	MigrationsTable string `yaml:"migrations_table"`
-	// MigrationSource might support many different kinds of sources in the future.
-	// Currently it supports only directory sources with the "dir://" prefix.
 	MigrationSource string `yaml:"migration_source"`
 }
-
-const dirSourcePrefix = "dir://"
 
 func (o *dbConfig) Validate(configFilename string) error {
 	if o.Driver == "" {
@@ -31,10 +26,6 @@ func (o *dbConfig) Validate(configFilename string) error {
 	if o.MigrationSource == "" {
 		return errors.New("migration_source must be set")
 	}
-	if !strings.HasPrefix(o.MigrationSource, dirSourcePrefix) {
-		return fmt.Errorf("invalid migration source (currently we support only %s): %s", dirSourcePrefix, o.MigrationSource)
-	}
-	o.MigrationSource = strings.TrimPrefix(o.MigrationSource, dirSourcePrefix)
 	if !filepath.IsAbs(o.MigrationSource) {
 		if !filepath.IsAbs(configFilename) {
 			absConfigFilename, err := filepath.Abs(configFilename)
