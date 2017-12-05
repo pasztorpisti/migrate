@@ -32,6 +32,6 @@ func CmdInit(input *CmdInitInput) error {
 
 	return step.Execute(ExecCtx{
 		DB:     db,
-		Printf: func(format string, args ...interface{}) {},
+		Output: nullPrinter{},
 	})
 }

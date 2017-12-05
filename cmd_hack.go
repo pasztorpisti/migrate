@@ -7,7 +7,7 @@ import (
 )
 
 type CmdHackInput struct {
-	Printf      PrintfFunc
+	Output      Printer
 	ConfigFile  string
 	DB          string
 	Forward     bool
@@ -89,8 +89,8 @@ func CmdHack(input *CmdHackInput) error {
 	if !input.MetaOnly {
 		if !input.Force {
 			if input.Forward == hasForwardID {
-				input.Printf("Nothing to do according to the migrations table.\n")
-				input.Printf("Use -force if you want to ignore the migrations table.\n")
+				input.Output.Println("Nothing to do according to the migrations table.")
+				input.Output.Println("Use -force if you want to ignore the migrations table.")
 				return nil
 			}
 		}
@@ -117,8 +117,8 @@ func CmdHack(input *CmdHackInput) error {
 	if !input.UserOnly {
 		if !input.Force {
 			if input.Forward == hasForwardID {
-				input.Printf("Nothing to do according to the migrations table.\n")
-				input.Printf("Use -force if you want to ignore the migrations table.\n")
+				input.Output.Println("Nothing to do according to the migrations table.")
+				input.Output.Println("Use -force if you want to ignore the migrations table.")
 				return nil
 			}
 		}
@@ -157,6 +157,6 @@ func CmdHack(input *CmdHackInput) error {
 
 	return step.Execute(ExecCtx{
 		DB:     db,
-		Printf: input.Printf,
+		Output: input.Output,
 	})
 }

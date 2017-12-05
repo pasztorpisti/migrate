@@ -13,16 +13,14 @@ type Step interface {
 
 type ExecCtx struct {
 	DB     DB
-	Printf PrintfFunc
+	Output Printer
 }
 
 type PrintCtx struct {
-	Printf       PrintfFunc
+	Output       Printer
 	PrintSQL     bool
 	PrintMetaSQL bool
 }
-
-type PrintfFunc func(format string, args ...interface{})
 
 type SQLExecStep struct {
 	Query         string
@@ -47,11 +45,11 @@ func (o *SQLExecStep) Print(ctx PrintCtx) {
 	if o.IsMeta && !ctx.PrintMetaSQL {
 		return
 	}
-	ctx.Printf("%s\n", strings.TrimSpace(o.Query))
+	ctx.Output.Println(strings.TrimSpace(o.Query))
 	if len(o.Args) != 0 {
-		ctx.Printf("QueryArgs: %v\n", o.Args)
+		ctx.Output.Println("QueryArgs:", o.Args)
 	}
-	ctx.Printf("\n")
+	ctx.Output.Println()
 }
 
 type Steps []Step
@@ -103,7 +101,7 @@ func (o TransactionIfAllowed) Execute(ctx ExecCtx) (retErr error) {
 			if retErr != nil {
 				err := tx.Rollback()
 				if err != nil {
-					ctx.Printf("Rollback error: %s\n", err)
+					ctx.Output.Println("Rollback error:", err)
 				}
 				return
 			}
@@ -121,13 +119,13 @@ func (o TransactionIfAllowed) Print(ctx PrintCtx) {
 
 	doPrint := ctx.PrintMetaSQL && o.AllowsTransaction()
 	if doPrint {
-		ctx.Printf("BEGIN;\n")
+		ctx.Output.Println("BEGIN;")
 	}
 
 	o.Steps.Print(ctx)
 
 	if doPrint {
-		ctx.Printf("COMMIT;\n\n")
+		ctx.Output.Print("COMMIT;\n\n")
 	}
 }
 
@@ -138,7 +136,7 @@ type StepTitle struct {
 
 func (o StepTitle) Execute(ctx ExecCtx) error {
 	if o.Title != "" {
-		ctx.Printf("%s\n", o.Title)
+		ctx.Output.Println(o.Title)
 	}
 	return o.Step.Execute(ctx)
 }
@@ -146,9 +144,9 @@ func (o StepTitle) Execute(ctx ExecCtx) error {
 func (o *StepTitle) Print(ctx PrintCtx) {
 	if o.Title != "" {
 		if ctx.PrintSQL {
-			ctx.Printf("-- %s\n", o.Title)
+			ctx.Output.Println("-- " + o.Title)
 		} else {
-			ctx.Printf("%s\n", o.Title)
+			ctx.Output.Println(o.Title)
 		}
 	}
 

@@ -10,7 +10,7 @@ import (
 )
 
 type CmdNewInput struct {
-	Printf      PrintfFunc
+	Output      Printer
 	ConfigFile  string
 	DB          string
 	Space       string
@@ -57,7 +57,7 @@ func CmdNew(input *CmdNewInput) error {
 		return fmt.Errorf("error writing file %q", path)
 	}
 
-	input.Printf("Created %s\n", path)
+	input.Output.Printf("Created %s\n", path)
 	return nil
 }
 

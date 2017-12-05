@@ -3,7 +3,7 @@ package migrate
 import "fmt"
 
 type CmdPlanInput struct {
-	Printf       PrintfFunc
+	Output       Printer
 	ConfigFile   string
 	DB           string
 	MigrationID  string
@@ -60,12 +60,12 @@ func CmdPlan(input *CmdPlanInput) error {
 	}
 
 	if len(steps) == 0 {
-		input.Printf("Nothing to migrate.\n")
+		input.Output.Println("Nothing to migrate.")
 		return nil
 	}
 
 	steps.Print(PrintCtx{
-		Printf:       input.Printf,
+		Output:       input.Output,
 		PrintSQL:     input.PrintSQL || input.PrintMetaSQL,
 		PrintMetaSQL: input.PrintMetaSQL,
 	})

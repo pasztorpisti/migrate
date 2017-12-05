@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/pasztorpisti/migrate"
 	"log"
 	"os"
@@ -82,9 +81,7 @@ func main() {
 	}
 }
 
-func printf(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
-}
+var stdoutPrinter = migrate.NewPrinter(os.Stdout)
 
 const newUsage = `Usage: migrate new [-space <space>] [-noext] [description]
 
@@ -132,7 +129,7 @@ func cmdNew(opts *migrateOptions, args []string) error {
 	}
 
 	return migrate.CmdNew(&migrate.CmdNewInput{
-		Printf:      printf,
+		Output:      stdoutPrinter,
 		ConfigFile:  opts.ConfigFile,
 		DB:          opts.DB,
 		Space:       *space,
@@ -205,7 +202,7 @@ func cmdGoto(opts *migrateOptions, args []string) error {
 	migrationID := fs.Arg(0)
 
 	return migrate.CmdGoto(&migrate.CmdGotoInput{
-		Printf:      printf,
+		Output:      stdoutPrinter,
 		ConfigFile:  opts.ConfigFile,
 		DB:          opts.DB,
 		MigrationID: migrationID,
@@ -252,7 +249,7 @@ func cmdPlan(opts *migrateOptions, args []string) error {
 	migrationID := fs.Arg(0)
 
 	return migrate.CmdPlan(&migrate.CmdPlanInput{
-		Printf:       printf,
+		Output:       stdoutPrinter,
 		ConfigFile:   opts.ConfigFile,
 		DB:           opts.DB,
 		MigrationID:  migrationID,
@@ -280,7 +277,7 @@ func cmdStatus(opts *migrateOptions, args []string) error {
 	}
 
 	return migrate.CmdStatus(&migrate.CmdStatusInput{
-		Printf:     printf,
+		Output:     stdoutPrinter,
 		ConfigFile: opts.ConfigFile,
 		DB:         opts.DB,
 	})
@@ -352,7 +349,7 @@ func cmdHack(opts *migrateOptions, args []string) error {
 	}
 
 	return migrate.CmdHack(&migrate.CmdHackInput{
-		Printf:      printf,
+		Output:      stdoutPrinter,
 		ConfigFile:  opts.ConfigFile,
 		DB:          opts.DB,
 		Forward:     forward,

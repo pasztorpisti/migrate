@@ -6,7 +6,7 @@ import (
 )
 
 type CmdStatusInput struct {
-	Printf     PrintfFunc
+	Output     Printer
 	ConfigFile string
 	DB         string
 }
@@ -75,18 +75,18 @@ func CmdStatus(input *CmdStatusInput) error {
 
 	for _, e := range entries {
 		_, ok := forwardIDMap[e.MigrationID.Number]
-		input.Printf("%s %s\n", checkbox(ok), e.MigrationID.Name)
+		input.Output.Printf("%s %s\n", checkbox(ok), e.MigrationID.Name)
 	}
 
 	for _, id := range forwardIDs {
 		_, ok := entryMap[id.Number]
 		if !ok {
-			input.Printf("!!! Exists only in migrations table: %s\n", id.Name)
+			input.Output.Printf("!!! Exists only in migrations table: %s\n", id.Name)
 		}
 	}
 
 	for _, name := range invalidNames {
-		input.Printf("!!! Invalid name in migrations table: %s\n", name)
+		input.Output.Printf("!!! Invalid name in migrations table: %s\n", name)
 	}
 
 	return nil
