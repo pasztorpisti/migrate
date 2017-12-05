@@ -133,9 +133,9 @@ func Plan(input *PlanInput) (Steps, error) {
 			item.migration.Backward,
 			updateMetaStep,
 		}
-		steps = append(steps, &StepTitle{
+		steps = append(steps, &StepTitleAndResult{
 			Step:  TransactionIfAllowed{s},
-			Title: fmt.Sprintf("Backward-migrate %s", item.id.Name),
+			Title: "backward-migrate " + item.id.Name,
 		})
 	}
 
@@ -158,9 +158,9 @@ func Plan(input *PlanInput) (Steps, error) {
 			item.migration.Forward,
 			updateMetaStep,
 		}
-		steps = append(steps, &StepTitle{
+		steps = append(steps, &StepTitleAndResult{
 			Step:  TransactionIfAllowed{s},
-			Title: fmt.Sprintf("Forward-migrate %s", item.id.Name),
+			Title: "forward-migrate " + item.id.Name,
 		})
 	}
 

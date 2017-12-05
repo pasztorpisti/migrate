@@ -670,13 +670,13 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 	})
 }
 
-func TestStepTitle(t *testing.T) {
+func TestStepTitleAndResult(t *testing.T) {
 	t.Run("Empty Title", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		writer := NewMockWriter(ctrl)
 		printer := NewPrinter(writer)
 		wrapped := NewMockStep(ctrl)
-		step := StepTitle{
+		step := StepTitleAndResult{
 			Step: wrapped,
 		}
 		ctx := PrintCtx{
@@ -692,7 +692,7 @@ func TestStepTitle(t *testing.T) {
 		writer := NewMockWriter(ctrl)
 		printer := NewPrinter(writer)
 		wrapped := NewMockStep(ctrl)
-		step := StepTitle{
+		step := StepTitleAndResult{
 			Step:  wrapped,
 			Title: "test title",
 		}

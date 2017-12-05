@@ -129,19 +129,29 @@ func (o TransactionIfAllowed) Print(ctx PrintCtx) {
 	}
 }
 
-type StepTitle struct {
+type StepTitleAndResult struct {
 	Step
 	Title string
 }
 
-func (o StepTitle) Execute(ctx ExecCtx) error {
+func (o StepTitleAndResult) Execute(ctx ExecCtx) error {
 	if o.Title != "" {
-		ctx.Output.Println(o.Title)
+		ctx.Output.Print(o.Title + " ... ")
 	}
-	return o.Step.Execute(ctx)
+
+	err := o.Step.Execute(ctx)
+
+	if o.Title != "" {
+		if err != nil {
+			ctx.Output.Println("FAILED")
+		} else {
+			ctx.Output.Println("OK")
+		}
+	}
+	return err
 }
 
-func (o *StepTitle) Print(ctx PrintCtx) {
+func (o *StepTitleAndResult) Print(ctx PrintCtx) {
 	if o.Title != "" {
 		if ctx.PrintSQL {
 			ctx.Output.Println("-- " + o.Title)

@@ -142,10 +142,10 @@ Let's see the result of a `migrate goto 5` starting from the above state:
 
 ```
 $ migrate goto 5
-Backward-migrate 7.sql
-Backward-migrate 6.sql
-Forward-migrate 2.sql
-Forward-migrate 4.sql
+backward-migrate 7.sql ... OK
+backward-migrate 6.sql ... OK
+forward-migrate 2.sql ... OK
+forward-migrate 4.sql ... OK
 
 $ migrate status
 [X] 1.sql
