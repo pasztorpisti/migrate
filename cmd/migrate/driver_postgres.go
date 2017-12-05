@@ -1,4 +1,4 @@
-// +build !exclude_postgres
+// +build !no_postgres
 
 package main
 
