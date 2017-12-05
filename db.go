@@ -5,14 +5,18 @@ import (
 	"errors"
 )
 
-// TX supports (fakes) embedded transactions.
+// Support for (fake) nested transactions.
 // Only the top level transaction performs real commit/rollback on the DB.
 // If a child transaction rolls back then the parents aren't allowed to commit,
 // they have to roll back as well.
 // Note: the current implementation isn't goroutine safe.
-type TX interface {
-	DB
-	TXCloser
+
+type Querier interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+}
+
+type Execer interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
 type DB interface {
@@ -21,17 +25,14 @@ type DB interface {
 	BeginTX() (TX, error)
 }
 
+type TX interface {
+	DB
+	TXCloser
+}
+
 type TXCloser interface {
 	Commit() error
 	Rollback() error
-}
-
-type Querier interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-}
-
-type Execer interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
 // stdDB is used instead of *sql.DB in a few places to make the code easier to test.
