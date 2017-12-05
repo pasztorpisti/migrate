@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var migrateDirectivePattern = regexp.MustCompile(`^\s*-- \+migrate\s+(.*)$`)
+var migrateDirectivePattern = regexp.MustCompile(`^\s*--\s*\+migrate\s+(.*)$`)
 
 func LoadMigrationFile(filename string) (*Migration, error) {
 	b, err := ioutil.ReadFile(filename)
