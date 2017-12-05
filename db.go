@@ -12,14 +12,18 @@ import (
 // Note: the current implementation isn't goroutine safe.
 type TX interface {
 	DB
-	Commit() error
-	Rollback() error
+	TXCloser
 }
 
 type DB interface {
 	Querier
 	Execer
 	BeginTX() (TX, error)
+}
+
+type TXCloser interface {
+	Commit() error
+	Rollback() error
 }
 
 type Querier interface {
@@ -30,118 +34,148 @@ type Execer interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
-func WrapDB(db *sql.DB) DB {
+// stdDB is used instead of *sql.DB in a few places to make the code easier to test.
+type stdDB interface {
+	Querier
+	Execer
+	Begin() (*sql.Tx, error)
+}
+
+// stdTx is used instead of *sql.Tx in a few places to make the code easier to test.
+type stdTx interface {
+	Querier
+	Execer
+	TXCloser
+}
+
+func WrapDB(db stdDB) DB {
 	return dbWrapper{db}
 }
 
 type dbWrapper struct {
-	*sql.DB
+	stdDB
 }
 
 func (o dbWrapper) BeginTX() (TX, error) {
-	tx, err := o.DB.Begin()
+	tx, err := o.stdDB.Begin()
 	if err != nil {
 		return nil, err
 	}
-	w := &txWrapper{tx, newTxChildren()}
-	return &childTxResultChecker{w, w.txChildren}, nil
+	return wrapTx(tx), nil
+}
+
+func wrapTx(tx stdTx) TX {
+	return newParentTX(&txWrapper{tx})
 }
 
 type txWrapper struct {
-	*sql.Tx
-	*txChildren
+	stdTx
 }
 
 func (o *txWrapper) BeginTX() (TX, error) {
-	w := &recursiveTxWrapper{
-		TX:         o,
-		txChildren: newTxChildren(),
-		parent:     o,
-	}
-	return &childTxResultChecker{w, w.txChildren}, nil
+	return wrapTxWrapper(o), nil
 }
 
-type recursiveTxWrapper struct {
+func wrapTxWrapper(tx TX) TX {
+	return newParentTX(&recursiveTXWrapper{TX: tx})
+}
+
+type recursiveTXWrapper struct {
 	TX
-	*txChildren
-	parent   parentTx
 	finished bool
 }
 
-func (o *recursiveTxWrapper) BeginTX() (TX, error) {
-	w := &recursiveTxWrapper{
-		TX:         o,
-		txChildren: newTxChildren(),
-		parent:     o,
-	}
-	return &childTxResultChecker{w, w.txChildren}, nil
+func (o *recursiveTXWrapper) BeginTX() (TX, error) {
+	return newParentTX(&recursiveTXWrapper{TX: o}), nil
 }
 
-func (o *recursiveTxWrapper) Commit() error {
+var errCommitFinishedTX = errors.New("can't Commit a tx that has been committed or rolled back")
+
+func (o *recursiveTXWrapper) Commit() error {
 	if o.finished {
-		return errors.New("can't Commit a tx that has been committed or rolled back")
+		return errCommitFinishedTX
 	}
 	o.finished = true
-	o.parent.childCommit(o)
 	return nil
 }
 
-func (o *recursiveTxWrapper) Rollback() error {
+var errRollbackFinishedTX = errors.New("can't Rollback a tx that has been committed or rolled back")
+
+func (o *recursiveTXWrapper) Rollback() error {
 	if o.finished {
-		return errors.New("can't Rollback a tx that has been committed or rolled back")
+		return errRollbackFinishedTX
 	}
 	o.finished = true
-	o.parent.childRollback(o)
 	return nil
 }
 
-type parentTx interface {
+func newParentTX(tx TX) *parentTX {
+	return &parentTX{
+		TX:       tx,
+		children: make(map[TX]struct{}),
+	}
+}
+
+type parentTX struct {
 	TX
-	childCommit(*recursiveTxWrapper)
-	childRollback(*recursiveTxWrapper)
+	children    map[TX]struct{}
+	hasRollback bool
 }
 
-func newTxChildren() *txChildren {
-	return &txChildren{
-		children: make(map[parentTx]struct{}),
+func (o *parentTX) BeginTX() (TX, error) {
+	tx, err := o.TX.BeginTX()
+	if err == nil {
+		tx = &childTX{
+			TX:     tx,
+			parent: o,
+		}
+		o.children[tx] = struct{}{}
 	}
+	return tx, err
 }
 
-type txChildren struct {
-	hasChildRollback bool
-	children         map[parentTx]struct{}
-}
-
-func (o *txChildren) childCommit(child *recursiveTxWrapper) {
+func (o *parentTX) childCommit(child TX) {
 	delete(o.children, child)
 }
 
-func (o *txChildren) childRollback(child *recursiveTxWrapper) {
+func (o *parentTX) childRollback(child TX) {
 	delete(o.children, child)
-	o.hasChildRollback = true
+	o.hasRollback = true
 }
 
-type childTxResultChecker struct {
-	parentTx
-	children *txChildren
+var errCommitAfterChildRollback = errors.New("can't Commit a tx that has rolled back children")
+var errCommitWithUnfinishedChildren = errors.New("trying to Commit a transaction that has unfinished children")
+
+func (o *parentTX) Commit() error {
+	if o.hasRollback {
+		return errCommitAfterChildRollback
+	}
+	if len(o.children) != 0 {
+		return errCommitWithUnfinishedChildren
+	}
+	return o.TX.Commit()
 }
 
-func (o *childTxResultChecker) Commit() error {
-	if o.children.hasChildRollback {
-		o.Rollback()
-		return errors.New("can't Commit a tx that has rolled back children")
+var errRollbackWithUnfinishedChildren = errors.New("trying to Rollback a transaction that has unfinished children")
+
+func (o *parentTX) Rollback() error {
+	if len(o.children) != 0 {
+		return errRollbackWithUnfinishedChildren
 	}
-	if len(o.children.children) != 0 {
-		o.Rollback()
-		return errors.New("committing a transaction that has unfinished children")
-	}
-	return o.parentTx.Commit()
+	return o.TX.Rollback()
 }
 
-func (o *childTxResultChecker) Rollback() error {
-	err := o.parentTx.Rollback()
-	if len(o.children.children) != 0 {
-		return errors.New("rolling back a transaction that has unfinished children")
-	}
-	return err
+type childTX struct {
+	TX
+	parent *parentTX
+}
+
+func (o *childTX) Commit() error {
+	o.parent.childCommit(o)
+	return o.TX.Commit()
+}
+
+func (o *childTX) Rollback() error {
+	o.parent.childRollback(o)
+	return o.TX.Rollback()
 }
