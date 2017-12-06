@@ -3,7 +3,6 @@ package migrate
 import (
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 type CmdHackInput struct {
@@ -32,9 +31,9 @@ func CmdHack(input *CmdHackInput) error {
 		return err
 	}
 
-	driver, err := GetDriver(cfg.Driver)
-	if err != nil {
-		return err
+	driver, ok := GetDriver(cfg.Driver)
+	if !ok {
+		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
 	}
 
 	db, err := driver.Open(cfg.DataSource)
@@ -47,39 +46,36 @@ func CmdHack(input *CmdHackInput) error {
 		return err
 	}
 
+	source, ok := GetMigrationSource("dir")
+	if !ok {
+		panic("can't get migration source")
+	}
+	migrations, err := source.MigrationEntries(input.ConfigFile, cfg.MigrationSource)
+	if err != nil {
+		return fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSource, err)
+	}
+
 	forwardMigrations, err := mdb.GetForwardMigrations(db)
 	if err != nil {
 		return err
 	}
-
-	forwardIDMap := make(map[string]string, len(forwardMigrations))
+	forwardMap := make(map[string]struct{}, len(forwardMigrations))
 	for _, m := range forwardMigrations {
-		forwardIDMap[m.Name] = m.Name
-		var id MigrationID
-		if err := id.SetName(m.Name); err == nil {
-			numericID := strconv.FormatInt(id.Number, 10)
-			forwardIDMap[numericID] = m.Name
-		}
-	}
-
-	entries, err := LoadMigrationsDir(cfg.MigrationSource)
-	if err != nil {
-		return fmt.Errorf("error loading migrations dir %q: %s", cfg.MigrationSource, err)
-	}
-	entryMap := make(map[string]*MigrationDirEntry, len(entries))
-	for _, e := range entries {
-		numericID := strconv.FormatInt(e.MigrationID.Number, 10)
-		entryMap[numericID] = e
-		entryMap[e.MigrationID.Name] = e
+		forwardMap[m.Name] = struct{}{}
 	}
 
 	// Preparing for the worst: when some of the IDs exist only in
 	// the migrations table but not in migration files and vice versa.
 
-	entry, hasEntry := entryMap[input.MigrationID]
-	forwardName, hasForwardID := forwardIDMap[input.MigrationID]
+	index, hasMigration := migrations.IndexForName(input.MigrationID)
 
-	if !hasEntry && !hasForwardID {
+	name := input.MigrationID
+	if hasMigration {
+		name = migrations.Name(index)
+	}
+	_, hasForwardID := forwardMap[name]
+
+	if !hasMigration && !hasForwardID {
 		return errors.New("invalid migration ID")
 	}
 
@@ -94,19 +90,20 @@ func CmdHack(input *CmdHackInput) error {
 				return nil
 			}
 		}
-		if !hasEntry {
-			return fmt.Errorf("there are no backward/forward migrations defined for %v", input.MigrationID)
+		if !hasMigration {
+			return fmt.Errorf("there is no migrations file for %q", name)
 		}
-		migration, err := LoadMigrationFile(entry.Filepath)
+		forward, backward, err := migrations.Steps(index)
 		if err != nil {
-			return fmt.Errorf("error loading migration file %q: %s", entry.Filepath, err)
+			return fmt.Errorf("error loading migration file %q: %s", name, err)
 		}
+
 		if input.Forward {
-			userStep = migration.Forward
+			userStep = forward
 		} else {
-			userStep = migration.Backward
+			userStep = backward
 			if userStep == nil {
-				return fmt.Errorf("migration %q doesn't have backward migration", migration.Name)
+				return fmt.Errorf("migration %q doesn't have backward step", name)
 			}
 		}
 	}
@@ -121,15 +118,6 @@ func CmdHack(input *CmdHackInput) error {
 				input.Output.Println("Use -force if you want to ignore the migrations table.")
 				return nil
 			}
-		}
-
-		var name string
-		if hasForwardID {
-			name = forwardName
-		} else if hasEntry {
-			name = entry.MigrationID.Name
-		} else {
-			panic("this should never happen")
 		}
 
 		if input.Forward {

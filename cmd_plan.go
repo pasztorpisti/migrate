@@ -17,9 +17,9 @@ func CmdPlan(input *CmdPlanInput) error {
 		return err
 	}
 
-	driver, err := GetDriver(cfg.Driver)
-	if err != nil {
-		return err
+	driver, ok := GetDriver(cfg.Driver)
+	if !ok {
+		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
 	}
 
 	db, err := driver.Open(cfg.DataSource)
@@ -40,13 +40,13 @@ func CmdPlan(input *CmdPlanInput) error {
 		forwardNames[i] = m.Name
 	}
 
-	entries, err := LoadMigrationsDir(cfg.MigrationSource)
-	if err != nil {
-		return fmt.Errorf("error loading migrations dir %q: %s", cfg.MigrationSource, err)
+	source, ok := GetMigrationSource("dir")
+	if !ok {
+		panic("can't get migration source")
 	}
-	migrations, err := LoadMigrationFiles(entries)
+	migrations, err := source.MigrationEntries(input.ConfigFile, cfg.MigrationSource)
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSource, err)
 	}
 
 	steps, err := Plan(&PlanInput{

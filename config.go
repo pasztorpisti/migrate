@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"path/filepath"
 )
 
 type dbConfig struct {
@@ -15,26 +14,16 @@ type dbConfig struct {
 	MigrationSource string `yaml:"migration_source"`
 }
 
-func (o *dbConfig) Validate(configFilename string) error {
+func (o *dbConfig) Validate() error {
 	if o.Driver == "" {
 		return errors.New("driver must be set")
 	}
-	if _, err := GetDriver(o.Driver); err != nil {
-		return fmt.Errorf("%q is an invalid database driver", o.Driver)
+	if _, ok := GetDriver(o.Driver); !ok {
+		return fmt.Errorf("invalid DB driver: %s", o.Driver)
 	}
 
 	if o.MigrationSource == "" {
 		return errors.New("migration_source must be set")
-	}
-	if !filepath.IsAbs(o.MigrationSource) {
-		if !filepath.IsAbs(configFilename) {
-			absConfigFilename, err := filepath.Abs(configFilename)
-			if err != nil {
-				return fmt.Errorf("can't convert config file path (%q) to absolute: %s", configFilename, err)
-			}
-			configFilename = absConfigFilename
-		}
-		o.MigrationSource = filepath.Join(filepath.Dir(configFilename), o.MigrationSource)
 	}
 
 	if o.MigrationsTable == "" {
@@ -69,5 +58,5 @@ func loadAndValidateDBConfig(configFilename, db string) (*dbConfig, error) {
 		return nil, fmt.Errorf("DB %q isn't defined in config file %q", db, configFilename)
 	}
 
-	return dbCfg, dbCfg.Validate(configFilename)
+	return dbCfg, dbCfg.Validate()
 }

@@ -56,14 +56,14 @@ func TestGetDriver(t *testing.T) {
 		registry := make(driverMap)
 		registry.RegisterDriver(name, driver)
 
-		res, err := registry.GetDriver(name)
-		assert.NoError(t, err)
+		res, ok := registry.GetDriver(name)
+		assert.True(t, ok)
 		assert.Equal(t, driver, res)
 	})
 
 	t.Run("Get missing driver", func(t *testing.T) {
 		registry := make(driverMap)
-		_, err := registry.GetDriver("missing_driver")
-		assert.Equal(t, ErrDriverNotFound, err)
+		_, ok := registry.GetDriver("missing_driver")
+		assert.False(t, ok)
 	})
 }

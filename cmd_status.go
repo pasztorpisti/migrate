@@ -1,9 +1,6 @@
 package migrate
 
-import (
-	"fmt"
-	"sort"
-)
+import "fmt"
 
 type CmdStatusInput struct {
 	Output     Printer
@@ -17,9 +14,9 @@ func CmdStatus(input *CmdStatusInput) error {
 		return err
 	}
 
-	driver, err := GetDriver(cfg.Driver)
-	if err != nil {
-		return err
+	driver, ok := GetDriver(cfg.Driver)
+	if !ok {
+		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
 	}
 
 	db, err := driver.Open(cfg.DataSource)
@@ -32,38 +29,29 @@ func CmdStatus(input *CmdStatusInput) error {
 		return err
 	}
 
+	source, ok := GetMigrationSource("dir")
+	if !ok {
+		panic("can't get migration source")
+	}
+	migrations, err := source.MigrationEntries(input.ConfigFile, cfg.MigrationSource)
+	if err != nil {
+		return fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSource, err)
+	}
+
 	forwardMigrations, err := mdb.GetForwardMigrations(db)
 	if err != nil {
 		return err
 	}
 
 	var invalidNames []string
-	forwardIDMap := make(map[int64]MigrationID, len(forwardMigrations))
+	forwardMap := make(map[string]struct{}, len(forwardMigrations))
 	for _, m := range forwardMigrations {
-		var id MigrationID
-		if err := id.SetName(m.Name); err != nil {
+		_, ok := migrations.IndexForName(m.Name)
+		if !ok {
 			invalidNames = append(invalidNames, m.Name)
 		} else {
-			forwardIDMap[id.Number] = id
+			forwardMap[m.Name] = struct{}{}
 		}
-	}
-	sort.Strings(invalidNames)
-
-	forwardIDs := make([]MigrationID, 0, len(forwardIDMap))
-	for _, id := range forwardIDMap {
-		forwardIDs = append(forwardIDs, id)
-	}
-	sort.Slice(forwardIDs, func(i, j int) bool {
-		return forwardIDs[i].Number < forwardIDs[j].Number
-	})
-
-	entries, err := LoadMigrationsDir(cfg.MigrationSource)
-	if err != nil {
-		return fmt.Errorf("error loading migrations dir %q: %s", cfg.MigrationSource, err)
-	}
-	entryMap := make(map[int64]*MigrationDirEntry, len(entries))
-	for _, e := range entries {
-		entryMap[e.MigrationID.Number] = e
 	}
 
 	checkbox := func(checked bool) string {
@@ -73,16 +61,11 @@ func CmdStatus(input *CmdStatusInput) error {
 		return "[ ]"
 	}
 
-	for _, e := range entries {
-		_, ok := forwardIDMap[e.MigrationID.Number]
-		input.Output.Printf("%s %s\n", checkbox(ok), e.MigrationID.Name)
-	}
-
-	for _, id := range forwardIDs {
-		_, ok := entryMap[id.Number]
-		if !ok {
-			input.Output.Printf("!!! Exists only in migrations table: %s\n", id.Name)
-		}
+	numMigrations := migrations.NumMigrations()
+	for i := 0; i < numMigrations; i++ {
+		name := migrations.Name(i)
+		_, ok := forwardMap[name]
+		input.Output.Printf("%s %s\n", checkbox(ok), name)
 	}
 
 	for _, name := range invalidNames {

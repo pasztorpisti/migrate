@@ -1,5 +1,7 @@
 package migrate
 
+import "fmt"
+
 type CmdInitInput struct {
 	ConfigFile string
 	DB         string
@@ -11,9 +13,9 @@ func CmdInit(input *CmdInitInput) error {
 		return err
 	}
 
-	driver, err := GetDriver(cfg.Driver)
-	if err != nil {
-		return err
+	driver, ok := GetDriver(cfg.Driver)
+	if !ok {
+		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
 	}
 
 	db, err := driver.Open(cfg.DataSource)

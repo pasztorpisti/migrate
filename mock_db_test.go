@@ -10,6 +10,160 @@ import (
 	reflect "reflect"
 )
 
+// MockQuerier is a mock of Querier interface
+type MockQuerier struct {
+	ctrl     *gomock.Controller
+	recorder *MockQuerierMockRecorder
+}
+
+// MockQuerierMockRecorder is the mock recorder for MockQuerier
+type MockQuerierMockRecorder struct {
+	mock *MockQuerier
+}
+
+// NewMockQuerier creates a new mock instance
+func NewMockQuerier(ctrl *gomock.Controller) *MockQuerier {
+	mock := &MockQuerier{ctrl: ctrl}
+	mock.recorder = &MockQuerierMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockQuerier) EXPECT() *MockQuerierMockRecorder {
+	return m.recorder
+}
+
+// Query mocks base method
+func (m *MockQuerier) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	varargs := []interface{}{query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Query", varargs...)
+	ret0, _ := ret[0].(*sql.Rows)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Query indicates an expected call of Query
+func (mr *MockQuerierMockRecorder) Query(query interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockQuerier)(nil).Query), varargs...)
+}
+
+// MockExecer is a mock of Execer interface
+type MockExecer struct {
+	ctrl     *gomock.Controller
+	recorder *MockExecerMockRecorder
+}
+
+// MockExecerMockRecorder is the mock recorder for MockExecer
+type MockExecerMockRecorder struct {
+	mock *MockExecer
+}
+
+// NewMockExecer creates a new mock instance
+func NewMockExecer(ctrl *gomock.Controller) *MockExecer {
+	mock := &MockExecer{ctrl: ctrl}
+	mock.recorder = &MockExecerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockExecer) EXPECT() *MockExecerMockRecorder {
+	return m.recorder
+}
+
+// Exec mocks base method
+func (m *MockExecer) Exec(query string, args ...interface{}) (sql.Result, error) {
+	varargs := []interface{}{query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Exec", varargs...)
+	ret0, _ := ret[0].(sql.Result)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Exec indicates an expected call of Exec
+func (mr *MockExecerMockRecorder) Exec(query interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockExecer)(nil).Exec), varargs...)
+}
+
+// MockDB is a mock of DB interface
+type MockDB struct {
+	ctrl     *gomock.Controller
+	recorder *MockDBMockRecorder
+}
+
+// MockDBMockRecorder is the mock recorder for MockDB
+type MockDBMockRecorder struct {
+	mock *MockDB
+}
+
+// NewMockDB creates a new mock instance
+func NewMockDB(ctrl *gomock.Controller) *MockDB {
+	mock := &MockDB{ctrl: ctrl}
+	mock.recorder = &MockDBMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockDB) EXPECT() *MockDBMockRecorder {
+	return m.recorder
+}
+
+// Query mocks base method
+func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	varargs := []interface{}{query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Query", varargs...)
+	ret0, _ := ret[0].(*sql.Rows)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Query indicates an expected call of Query
+func (mr *MockDBMockRecorder) Query(query interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockDB)(nil).Query), varargs...)
+}
+
+// Exec mocks base method
+func (m *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
+	varargs := []interface{}{query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Exec", varargs...)
+	ret0, _ := ret[0].(sql.Result)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Exec indicates an expected call of Exec
+func (mr *MockDBMockRecorder) Exec(query interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockDB)(nil).Exec), varargs...)
+}
+
+// BeginTX mocks base method
+func (m *MockDB) BeginTX() (TX, error) {
+	ret := m.ctrl.Call(m, "BeginTX")
+	ret0, _ := ret[0].(TX)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTX indicates an expected call of BeginTX
+func (mr *MockDBMockRecorder) BeginTX() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTX", reflect.TypeOf((*MockDB)(nil).BeginTX))
+}
+
 // MockTX is a mock of TX interface
 type MockTX struct {
 	ctrl     *gomock.Controller
@@ -106,78 +260,6 @@ func (mr *MockTXMockRecorder) Rollback() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockTX)(nil).Rollback))
 }
 
-// MockDB is a mock of DB interface
-type MockDB struct {
-	ctrl     *gomock.Controller
-	recorder *MockDBMockRecorder
-}
-
-// MockDBMockRecorder is the mock recorder for MockDB
-type MockDBMockRecorder struct {
-	mock *MockDB
-}
-
-// NewMockDB creates a new mock instance
-func NewMockDB(ctrl *gomock.Controller) *MockDB {
-	mock := &MockDB{ctrl: ctrl}
-	mock.recorder = &MockDBMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockDB) EXPECT() *MockDBMockRecorder {
-	return m.recorder
-}
-
-// Query mocks base method
-func (m *MockDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	varargs := []interface{}{query}
-	for _, a := range args {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Query", varargs...)
-	ret0, _ := ret[0].(*sql.Rows)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Query indicates an expected call of Query
-func (mr *MockDBMockRecorder) Query(query interface{}, args ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{query}, args...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockDB)(nil).Query), varargs...)
-}
-
-// Exec mocks base method
-func (m *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
-	varargs := []interface{}{query}
-	for _, a := range args {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Exec", varargs...)
-	ret0, _ := ret[0].(sql.Result)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Exec indicates an expected call of Exec
-func (mr *MockDBMockRecorder) Exec(query interface{}, args ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{query}, args...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockDB)(nil).Exec), varargs...)
-}
-
-// BeginTX mocks base method
-func (m *MockDB) BeginTX() (TX, error) {
-	ret := m.ctrl.Call(m, "BeginTX")
-	ret0, _ := ret[0].(TX)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// BeginTX indicates an expected call of BeginTX
-func (mr *MockDBMockRecorder) BeginTX() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTX", reflect.TypeOf((*MockDB)(nil).BeginTX))
-}
-
 // MockTXCloser is a mock of TXCloser interface
 type MockTXCloser struct {
 	ctrl     *gomock.Controller
@@ -223,88 +305,6 @@ func (m *MockTXCloser) Rollback() error {
 // Rollback indicates an expected call of Rollback
 func (mr *MockTXCloserMockRecorder) Rollback() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockTXCloser)(nil).Rollback))
-}
-
-// MockQuerier is a mock of Querier interface
-type MockQuerier struct {
-	ctrl     *gomock.Controller
-	recorder *MockQuerierMockRecorder
-}
-
-// MockQuerierMockRecorder is the mock recorder for MockQuerier
-type MockQuerierMockRecorder struct {
-	mock *MockQuerier
-}
-
-// NewMockQuerier creates a new mock instance
-func NewMockQuerier(ctrl *gomock.Controller) *MockQuerier {
-	mock := &MockQuerier{ctrl: ctrl}
-	mock.recorder = &MockQuerierMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockQuerier) EXPECT() *MockQuerierMockRecorder {
-	return m.recorder
-}
-
-// Query mocks base method
-func (m *MockQuerier) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	varargs := []interface{}{query}
-	for _, a := range args {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Query", varargs...)
-	ret0, _ := ret[0].(*sql.Rows)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Query indicates an expected call of Query
-func (mr *MockQuerierMockRecorder) Query(query interface{}, args ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{query}, args...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockQuerier)(nil).Query), varargs...)
-}
-
-// MockExecer is a mock of Execer interface
-type MockExecer struct {
-	ctrl     *gomock.Controller
-	recorder *MockExecerMockRecorder
-}
-
-// MockExecerMockRecorder is the mock recorder for MockExecer
-type MockExecerMockRecorder struct {
-	mock *MockExecer
-}
-
-// NewMockExecer creates a new mock instance
-func NewMockExecer(ctrl *gomock.Controller) *MockExecer {
-	mock := &MockExecer{ctrl: ctrl}
-	mock.recorder = &MockExecerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockExecer) EXPECT() *MockExecerMockRecorder {
-	return m.recorder
-}
-
-// Exec mocks base method
-func (m *MockExecer) Exec(query string, args ...interface{}) (sql.Result, error) {
-	varargs := []interface{}{query}
-	for _, a := range args {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Exec", varargs...)
-	ret0, _ := ret[0].(sql.Result)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Exec indicates an expected call of Exec
-func (mr *MockExecerMockRecorder) Exec(query interface{}, args ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{query}, args...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockExecer)(nil).Exec), varargs...)
 }
 
 // MockstdDB is a mock of stdDB interface

@@ -1,8 +1,9 @@
-package migrate
+package dir
 
 import (
 	"errors"
 	"fmt"
+	"github.com/pasztorpisti/migrate"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -10,9 +11,75 @@ import (
 	"strings"
 )
 
+type entry struct {
+	MigrationID migrationID
+	// Filepath is the absolute path to the migration file.
+	Filepath string
+}
+
+// loadMigrationsDir scans a migration directory and creates a sorted list of
+// MigrationDirEntries without loading/parsing the migration files.
+// It fails if there is a duplicate migration ID.
+func loadMigrationsDir(dir string) ([]*entry, error) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make(map[int64]struct{}, len(files))
+	res := make([]*entry, 0, len(files))
+	for _, item := range files {
+		if item.IsDir() {
+			continue
+		}
+		var e entry
+		if err := e.MigrationID.SetName(item.Name()); err != nil {
+			return nil, err
+		}
+
+		_, ok := ids[e.MigrationID.Number]
+		if ok {
+			return nil, fmt.Errorf("duplicate migration ID (%v)", e.MigrationID.Number)
+		}
+		ids[e.MigrationID.Number] = struct{}{}
+
+		e.Filepath = filepath.Join(dir, item.Name())
+		res = append(res, &e)
+	}
+
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].MigrationID.Number < res[j].MigrationID.Number
+	})
+
+	return res, nil
+}
+
+// Migration represents one migration. It can be loaded from any source, for example
+// memory, a directory that contains SQL files, or anything else.
+type Migration struct {
+	// Name is the name of the migration.
+	// It has to have a valid integer prefix consisting of digits.
+	// This integer prefix has to be unique in the list of migrations and the
+	// order in which migrations are applied is based on the ordering of this
+	// integer ID.
+	//
+	// You can use the ID type to parse names.
+	//
+	// Valid example names: "0", "123", "52.sql", "0anything", "67-drop-table",
+	// "5.my.migration.sql", "42_my_migration", "42_my_migration.sql".
+	Name string
+
+	// Forward is the Step to execute when this migration has to be forward migrated.
+	Forward migrate.Step
+
+	// Backward is the Step to execute when this migration has to be backward migrated.
+	// It can be nil if this migration can't be backward migrated.
+	Backward migrate.Step
+}
+
 var migrateDirectivePattern = regexp.MustCompile(`^\s*--\s*\+migrate\s+(.*)$`)
 
-func LoadMigrationFile(filename string) (*Migration, error) {
+func loadMigrationFile(filename string) (*Migration, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -45,7 +112,7 @@ func LoadMigrationFile(filename string) (*Migration, error) {
 		LineIdx: len(lines),
 	})
 
-	migration := &Migration{
+	m := &Migration{
 		Name: filepath.Base(filename),
 	}
 
@@ -57,25 +124,25 @@ func LoadMigrationFile(filename string) (*Migration, error) {
 		}
 		begin := indexes[i].LineIdx
 		end := indexes[i+1].LineIdx
-		step := &SQLExecStep{
+		step := &migrate.SQLExecStep{
 			Query:         strings.Join(lines[begin+1:end], "\n"),
 			NoTransaction: notransaction,
 		}
 
 		if forward {
-			if migration.Forward != nil {
+			if m.Forward != nil {
 				return nil, errors.New("multiple '+migrate forward' directives in the same migration")
 			}
-			migration.Forward = step
+			m.Forward = step
 		} else {
-			if migration.Backward != nil {
+			if m.Backward != nil {
 				return nil, errors.New("multiple '+migrate backward' directives in the same migration")
 			}
-			migration.Backward = step
+			m.Backward = step
 		}
 	}
 
-	return migration, nil
+	return m, nil
 }
 
 func parseDirectiveParams(params string) (forward, notransaction bool, err error) {
@@ -112,59 +179,4 @@ func parseDirectiveParams(params string) (forward, notransaction bool, err error
 		return false, false, errors.New("either forward or backward has to be specified")
 	}
 	return forward, notransaction, nil
-}
-
-type MigrationDirEntry struct {
-	MigrationID MigrationID
-	// Filepath is the absolute path to the migration file.
-	Filepath string
-}
-
-// LoadMigrationsDir scans a migration directory and creates a sorted list of
-// MigrationDirEntries without loading/parsing the migration files.
-// It fails if there is a duplicate migration ID.
-func LoadMigrationsDir(dir string) ([]*MigrationDirEntry, error) {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	ids := make(map[int64]struct{}, len(files))
-	res := make([]*MigrationDirEntry, 0, len(files))
-	for _, item := range files {
-		if item.IsDir() {
-			continue
-		}
-		var e MigrationDirEntry
-		if err := e.MigrationID.SetName(item.Name()); err != nil {
-			return nil, err
-		}
-
-		_, ok := ids[e.MigrationID.Number]
-		if ok {
-			return nil, fmt.Errorf("duplicate migration ID (%v)", e.MigrationID.Number)
-		}
-		ids[e.MigrationID.Number] = struct{}{}
-
-		e.Filepath = filepath.Join(dir, item.Name())
-		res = append(res, &e)
-	}
-
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].MigrationID.Number < res[j].MigrationID.Number
-	})
-
-	return res, nil
-}
-
-func LoadMigrationFiles(entries []*MigrationDirEntry) ([]*Migration, error) {
-	res := make([]*Migration, len(entries))
-	for i, e := range entries {
-		m, err := LoadMigrationFile(e.Filepath)
-		if err != nil {
-			return nil, fmt.Errorf("error loading migration file %q: %s", e.Filepath, err)
-		}
-		res[i] = m
-	}
-	return res, nil
 }

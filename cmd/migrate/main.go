@@ -83,58 +83,11 @@ func main() {
 
 var stdoutPrinter = migrate.NewPrinter(os.Stdout)
 
-const newUsage = `Usage: migrate new [-space <space>] [-noext] [description]
-
-Creates a new migration file in the migration_dir specified in the config file.
-
-The new filename is CONCATENATE(current_unix_time, space, description, ".sql").
-After generating the filename spaces are replaced with '_'.
-You can change '_' to somethinge else with the -space option.
-You can prevent appending the ".sql" extension with the -noext option.
-
-E.g.:
-The following command: migrate new "my first migration"
-Results in something like: 1512307720_my_first_migration.sql
-
-After creation you can rename the file to whatever you like before forward
-migrating it. After forward migration you mustn't rename it.
-The only requirement is that it has to start with a non-negative integer
-that is uniqe among your migration files.
-E.g.: "0", "432134", "1.migration" and "1.sql" are all valid filenames.
-
-You don't have to pad the numbers with leading zeros to ensure correct ordering
-because sorting uses the parsed integer values instead of the filenames.
-
-Options:
-`
-
 func cmdNew(opts *migrateOptions, args []string) error {
-	fs := flag.NewFlagSet("new", flag.ExitOnError)
-	fs.Usage = func() {
-		log.Print(newUsage)
-		fs.PrintDefaults()
-	}
-	space := fs.String("space", "_", "Character to be used as a safe space in migration filenames.")
-	noext := fs.Bool("noext", false, "Don't append the '.sql' extension.")
-	fs.Parse(args)
-
-	if fs.NArg() > 1 {
-		log.Printf("Unwanted extra arguments: %q", fs.Args()[1:])
-		fs.Usage()
-		os.Exit(1)
-	}
-	description := ""
-	if fs.NArg() >= 1 {
-		description = fs.Arg(0)
-	}
-
 	return migrate.CmdNew(&migrate.CmdNewInput{
-		Output:      stdoutPrinter,
-		ConfigFile:  opts.ConfigFile,
-		DB:          opts.DB,
-		Space:       *space,
-		NoExt:       *noext,
-		Description: description,
+		ConfigFile: opts.ConfigFile,
+		DB:         opts.DB,
+		Args:       args,
 	})
 }
 
