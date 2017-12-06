@@ -238,7 +238,7 @@ func cmdStatus(opts *migrateOptions, args []string) error {
 
 const hackUsage = `Usage: migrate hack [-force] [-useronly|-metaonly] <forward|backward> <migration_id>
 
-Backward- of forward-migrate a single step specified by <migration_id>.
+Forward- or backward-migrate a single step specified by <migration_id>.
 Useful for troubleshooting.
 
 It executes two set of SQL statements:
