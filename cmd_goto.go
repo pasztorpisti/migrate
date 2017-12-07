@@ -11,28 +11,56 @@ type CmdGotoInput struct {
 }
 
 func CmdGoto(input *CmdGotoInput) error {
-	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
+	steps, db, err := preparePlanForCmd(&preparePlanInput{
+		Output:      input.Output,
+		ConfigFile:  input.ConfigFile,
+		DB:          input.DB,
+		MigrationID: input.MigrationID,
+	})
 	if err != nil {
 		return err
+	}
+
+	execCtx := ExecCtx{
+		DB:     db,
+		Output: input.Output,
+	}
+	if input.Quiet {
+		execCtx.Output = nullPrinter{}
+	}
+	return steps.Execute(execCtx)
+}
+
+type preparePlanInput struct {
+	Output      Printer
+	ConfigFile  string
+	DB          string
+	MigrationID string
+}
+
+func preparePlanForCmd(input *preparePlanInput) (Steps, DB, error) {
+	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	driver, ok := GetDriver(cfg.Driver)
 	if !ok {
-		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
+		return nil, nil, fmt.Errorf("invalid DB driver: %s", cfg.Driver)
 	}
 
 	db, err := driver.Open(cfg.DataSource)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	mdb, err := driver.NewMigrationDB(cfg.MigrationsTable)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	forwardMigrations, err := mdb.GetForwardMigrations(db)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	forwardNames := make([]string, len(forwardMigrations))
 	for i, m := range forwardMigrations {
@@ -45,7 +73,7 @@ func CmdGoto(input *CmdGotoInput) error {
 	}
 	migrations, err := source.MigrationEntries(input.ConfigFile, cfg.MigrationSource)
 	if err != nil {
-		return fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSource, err)
+		return nil, nil, fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSource, err)
 	}
 
 	steps, err := Plan(&PlanInput{
@@ -55,20 +83,12 @@ func CmdGoto(input *CmdGotoInput) error {
 		MigrationDB:          mdb,
 	})
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	if len(steps) == 0 {
 		input.Output.Println("Nothing to migrate.")
-		return nil
 	}
 
-	execCtx := ExecCtx{
-		DB:     db,
-		Output: input.Output,
-	}
-	if input.Quiet {
-		execCtx.Output = nullPrinter{}
-	}
-	return steps.Execute(execCtx)
+	return steps, db, nil
 }

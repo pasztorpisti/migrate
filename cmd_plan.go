@@ -1,7 +1,5 @@
 package migrate
 
-import "fmt"
-
 type CmdPlanInput struct {
 	Output       Printer
 	ConfigFile   string
@@ -12,56 +10,14 @@ type CmdPlanInput struct {
 }
 
 func CmdPlan(input *CmdPlanInput) error {
-	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
-	if err != nil {
-		return err
-	}
-
-	driver, ok := GetDriver(cfg.Driver)
-	if !ok {
-		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
-	}
-
-	db, err := driver.Open(cfg.DataSource)
-	if err != nil {
-		return err
-	}
-
-	mdb, err := driver.NewMigrationDB(cfg.MigrationsTable)
-	if err != nil {
-		return err
-	}
-	forwardMigrations, err := mdb.GetForwardMigrations(db)
-	if err != nil {
-		return err
-	}
-	forwardNames := make([]string, len(forwardMigrations))
-	for i, m := range forwardMigrations {
-		forwardNames[i] = m.Name
-	}
-
-	source, ok := GetMigrationSource("dir")
-	if !ok {
-		panic("can't get migration source")
-	}
-	migrations, err := source.MigrationEntries(input.ConfigFile, cfg.MigrationSource)
-	if err != nil {
-		return fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSource, err)
-	}
-
-	steps, err := Plan(&PlanInput{
-		Migrations:           migrations,
-		ForwardMigratedNames: forwardNames,
-		Target:               input.MigrationID,
-		MigrationDB:          mdb,
+	steps, _, err := preparePlanForCmd(&preparePlanInput{
+		Output:      input.Output,
+		ConfigFile:  input.ConfigFile,
+		DB:          input.DB,
+		MigrationID: input.MigrationID,
 	})
 	if err != nil {
 		return err
-	}
-
-	if len(steps) == 0 {
-		input.Output.Println("Nothing to migrate.")
-		return nil
 	}
 
 	steps.Print(PrintCtx{
