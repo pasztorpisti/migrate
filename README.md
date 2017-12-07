@@ -37,9 +37,9 @@ dev:
   # Postgres data_source format: https://godoc.org/github.com/lib/pq
   data_source: postgres://steve@localhost:5432/postgres?sslmode=disable
 
-  # migration_source is a relative or absolute path to the directory that
-  # contains the migration files. If it is a relative path then it is
-  # relative to the parent dir of this config file.
+  # migration_source is the percent encoded relative or absolute path to the
+  # directory that contains the migration files.
+  # A relative path is relative to the parent dir of this config file.
   migration_source: migrations
 
 prod:
@@ -78,8 +78,8 @@ very simple rules but for now let's use the commandline tool:
 migrate new "initial migration"
 ```
 
-The above command creates a file like `<migrations_dir>/1512347381_initial_migration.sql`.
-Open and edit the file. In my example I create two simple tables:
+The above command creates a `<migrations_dir>/0001_initial_migration.sql` file.
+Edit it with an editor. In my example I create two simple tables:
 
 ```sql
 -- +migrate forward
@@ -122,14 +122,14 @@ In the below example `[X]` means that the bool flag for the given migration is s
 
 ```
 $ migrate status
-[X] 1.sql
-[ ] 2.sql
-[X] 3.sql
-[ ] 4.sql
-[X] 5.sql
-[X] 6.sql
-[X] 7.sql
-[ ] 8.sql
+[X] 0001.sql
+[ ] 0002.sql
+[X] 0003.sql
+[ ] 0004.sql
+[X] 0005.sql
+[X] 0006.sql
+[X] 0007.sql
+[ ] 0008.sql
 ```
 
 This migration tool has a single most important operation: `migrate goto <target_migration>`.
@@ -142,24 +142,24 @@ The `goto` operation selects a target migration and makes sure that:
    the target are forward migrated in ascending order.
    (Only those that haven't yet been applied and have `[ ]`.)
 
-Let's see the result of a `migrate goto 5` starting from the above state:
+Let's see the result of a `migrate goto 0005.sql` starting from the above state:
 
 ```
-$ migrate goto 5
-backward-migrate 7.sql ... OK
-backward-migrate 6.sql ... OK
-forward-migrate 2.sql ... OK
-forward-migrate 4.sql ... OK
+$ migrate goto 0005.sql
+backward-migrate 0007.sql ... OK
+backward-migrate 0006.sql ... OK
+forward-migrate 0002.sql ... OK
+forward-migrate 0004.sql ... OK
 
 $ migrate status
-[X] 1.sql
-[X] 2.sql
-[X] 3.sql
-[X] 4.sql
-[X] 5.sql
-[ ] 6.sql
-[ ] 7.sql
-[ ] 8.sql
+[X] 0001.sql
+[X] 0002.sql
+[X] 0003.sql
+[X] 0004.sql
+[X] 0005.sql
+[ ] 0006.sql
+[ ] 0007.sql
+[ ] 0008.sql
 ```
 
 ## Just Another Migration Tool

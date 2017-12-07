@@ -9,6 +9,7 @@ type MigrationEntries interface {
 	Name(index int) string
 	Steps(index int) (forward, backward Step, err error)
 	IndexForName(name string) (index int, ok bool)
+	AllowsPastMigrations() bool
 	New(args []string) (name string, err error)
 }
 

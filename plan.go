@@ -1,6 +1,11 @@
 package migrate
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var ErrMissingPastMigrations = errors.New("there are unapplied migrations before the latest applied migration")
 
 const (
 	Initial = "initial"
@@ -29,6 +34,19 @@ func Plan(input *PlanInput) (Steps, error) {
 			return nil, fmt.Errorf("can't find migration file for forward migrated item %q", name)
 		}
 		forwardMigrated[index] = true
+	}
+
+	if !input.Migrations.AllowsPastMigrations() {
+		allowForwardMigrated := true
+		for _, fm := range forwardMigrated {
+			if fm {
+				if !allowForwardMigrated {
+					return nil, ErrMissingPastMigrations
+				}
+			} else {
+				allowForwardMigrated = false
+			}
+		}
 	}
 
 	// Finding the index of the target migration in the sorted item list.
