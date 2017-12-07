@@ -3,7 +3,6 @@ package migrate
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -255,7 +254,6 @@ func TestNestedTransactions(t *testing.T) {
 		rtx2, err := rtx.BeginTX()
 		assert.NoError(t, err)
 
-		fmt.Printf("%#v\n%#v\n", rtx2.(*childTX).TX.(*parentTX).TX.(*recursiveTXWrapper).TX, rtx2.(*childTX).parent)
 		err = rtx2.Commit()
 		assert.NoError(t, err)
 		err = rtx.Commit()
