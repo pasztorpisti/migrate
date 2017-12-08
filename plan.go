@@ -74,7 +74,7 @@ func Plan(input *PlanInput) (Steps, error) {
 		name := input.Migrations.Name(i)
 		_, backwardStep, err := input.Migrations.Steps(i)
 		if err != nil {
-			fmt.Errorf("error loading backward step for migration %q", name)
+			return nil, fmt.Errorf("error loading backward step for migration %q", name)
 		}
 		if backwardStep == nil {
 			return nil, fmt.Errorf("%q doesn't have a backward step", name)
@@ -104,7 +104,7 @@ func Plan(input *PlanInput) (Steps, error) {
 		name := input.Migrations.Name(i)
 		forwardStep, _, err := input.Migrations.Steps(i)
 		if err != nil {
-			fmt.Errorf("error loading forward step for migration %q", name)
+			return nil, fmt.Errorf("error loading forward step for migration %q", name)
 		}
 
 		updateMetaStep, err := input.MigrationDB.ForwardMigrate(name)
