@@ -9,12 +9,12 @@ import (
 func TestRegisterDriver(t *testing.T) {
 	t.Run("Register duplicate driver name", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		driver := NewMockDriver(ctrl)
-		driver2 := NewMockDriver(ctrl)
+		df := NewMockDriverFactory(ctrl)
+		df2 := NewMockDriverFactory(ctrl)
 		const name = "my_driver"
 
-		registry := make(driverMap)
-		registry.RegisterDriver(name, driver)
+		registry := make(driverFactoryMap)
+		registry.RegisterDriverFactory(name, df)
 
 		panicked := false
 		defer func() {
@@ -26,7 +26,7 @@ func TestRegisterDriver(t *testing.T) {
 			assert.Equal(t, "duplicate database driver name: "+name, r)
 		}()
 
-		registry.RegisterDriver(name, driver2)
+		registry.RegisterDriverFactory(name, df2)
 		assert.True(t, panicked)
 	})
 
@@ -41,8 +41,8 @@ func TestRegisterDriver(t *testing.T) {
 			assert.Equal(t, "driver is nil", r)
 		}()
 
-		registry := make(driverMap)
-		registry.RegisterDriver("nil_driver", nil)
+		registry := make(driverFactoryMap)
+		registry.RegisterDriverFactory("nil_driver", nil)
 		assert.True(t, panicked)
 	})
 }
@@ -50,20 +50,20 @@ func TestRegisterDriver(t *testing.T) {
 func TestGetDriver(t *testing.T) {
 	t.Run("Get existing driver", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
-		driver := NewMockDriver(ctrl)
+		df := NewMockDriverFactory(ctrl)
 		const name = "my_driver"
 
-		registry := make(driverMap)
-		registry.RegisterDriver(name, driver)
+		registry := make(driverFactoryMap)
+		registry.RegisterDriverFactory(name, df)
 
-		res, ok := registry.GetDriver(name)
+		res, ok := registry.GetDriverFactory(name)
 		assert.True(t, ok)
-		assert.Equal(t, driver, res)
+		assert.Equal(t, df, res)
 	})
 
 	t.Run("Get missing driver", func(t *testing.T) {
-		registry := make(driverMap)
-		_, ok := registry.GetDriver("missing_driver")
+		registry := make(driverFactoryMap)
+		_, ok := registry.GetDriverFactory("missing_driver")
 		assert.False(t, ok)
 	})
 }

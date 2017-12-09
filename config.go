@@ -9,8 +9,8 @@ import (
 
 type dbConfig struct {
 	Driver          string `yaml:"driver"`
+	DriverParams    string `yaml:"driver_params"`
 	DataSource      string `yaml:"data_source"`
-	MigrationsTable string `yaml:"migrations_table"`
 	MigrationSource string `yaml:"migration_source"`
 }
 
@@ -24,10 +24,6 @@ func (o *dbConfig) Validate() error {
 
 	if o.MigrationSource == "" {
 		return errors.New("migration_source must be set")
-	}
-
-	if o.MigrationsTable == "" {
-		o.MigrationsTable = "migrations"
 	}
 	return nil
 }

@@ -44,9 +44,14 @@ func preparePlanForCmd(input *preparePlanInput) (Steps, DB, error) {
 		return nil, nil, err
 	}
 
-	driver, ok := GetDriver(cfg.Driver)
+	driverFactory, ok := GetDriver(cfg.Driver)
 	if !ok {
 		return nil, nil, fmt.Errorf("invalid DB driver: %s", cfg.Driver)
+	}
+
+	driver, err := driverFactory.NewDriver(cfg.DriverParams)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error creating %q DB driver: %s", cfg.Driver, err)
 	}
 
 	db, err := driver.Open(cfg.DataSource)
@@ -54,7 +59,7 @@ func preparePlanForCmd(input *preparePlanInput) (Steps, DB, error) {
 		return nil, nil, err
 	}
 
-	mdb, err := driver.NewMigrationDB(cfg.MigrationsTable)
+	mdb, err := driver.NewMigrationDB()
 	if err != nil {
 		return nil, nil, err
 	}

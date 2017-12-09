@@ -51,32 +51,32 @@ var errUnclosedTrailingTemplateParam = errors.New("reached the end of template s
 func ParseWithOptions(s string, opts *ParseOptions) ([]Section, error) {
 	var res []Section
 
-	var literal bytes.Buffer
+	var rawStr bytes.Buffer
 	length := len(s)
 	pos := 0
 
 	for {
-	literalLoop:
+	rawStrLoop:
 		for pos < length {
 			switch b := s[pos]; b {
 			default:
-				literal.WriteByte(b)
+				rawStr.WriteByte(b)
 				pos++
 			case opts.ParamOpen:
-				break literalLoop
+				break rawStrLoop
 			case opts.Escape:
 				if pos+1 >= length {
 					return nil, errLonelyTrailingEscape
 				}
 				pos++
-				literal.WriteByte(translateEscapedByte(s[pos]))
+				rawStr.WriteByte(translateEscapedByte(s[pos]))
 				pos++
 			}
 		}
 
-		if literal.Len() > 0 {
-			res = append(res, Section{RawString: literal.String()})
-			literal.Reset()
+		if rawStr.Len() > 0 {
+			res = append(res, Section{RawString: rawStr.String()})
+			rawStr.Reset()
 		}
 
 		if pos >= length {
@@ -92,20 +92,20 @@ func ParseWithOptions(s string, opts *ParseOptions) ([]Section, error) {
 		for pos < length {
 			switch b := s[pos]; b {
 			default:
-				literal.WriteByte(b)
+				rawStr.WriteByte(b)
 				pos++
 			case opts.ParamClose:
 				break paramsLoop
 			case opts.ParamSplit:
-				params = append(params, literal.String())
-				literal.Reset()
+				params = append(params, rawStr.String())
+				rawStr.Reset()
 				pos++
 			case opts.Escape:
 				if pos+1 >= length {
 					return nil, errLonelyTrailingEscape
 				}
 				pos++
-				literal.WriteByte(translateEscapedByte(s[pos]))
+				rawStr.WriteByte(translateEscapedByte(s[pos]))
 				pos++
 			}
 		}
@@ -117,8 +117,8 @@ func ParseWithOptions(s string, opts *ParseOptions) ([]Section, error) {
 		// skipping an opts.ParamClose
 		pos++
 
-		params = append(params, literal.String())
-		literal.Reset()
+		params = append(params, rawStr.String())
+		rawStr.Reset()
 
 		res = append(res, Section{Parameter: params})
 	}

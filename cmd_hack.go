@@ -31,9 +31,14 @@ func CmdHack(input *CmdHackInput) error {
 		return err
 	}
 
-	driver, ok := GetDriver(cfg.Driver)
+	driverFactory, ok := GetDriver(cfg.Driver)
 	if !ok {
 		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
+	}
+
+	driver, err := driverFactory.NewDriver(cfg.DriverParams)
+	if err != nil {
+		return fmt.Errorf("error creating %q DB driver: %s", cfg.Driver, err)
 	}
 
 	db, err := driver.Open(cfg.DataSource)
@@ -41,7 +46,7 @@ func CmdHack(input *CmdHackInput) error {
 		return err
 	}
 
-	mdb, err := driver.NewMigrationDB(cfg.MigrationsTable)
+	mdb, err := driver.NewMigrationDB()
 	if err != nil {
 		return err
 	}
