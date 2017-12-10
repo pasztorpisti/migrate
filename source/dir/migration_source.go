@@ -156,6 +156,10 @@ func (o *entries) New(args []string) (name string, err error) {
 		}
 	}
 
+	if !fp.OptionalDescription && description == "" {
+		return "", errors.New("you have to provide a non-empty description")
+	}
+
 	if *squashed {
 		return o.createSquashedMigrationFile(description)
 	}

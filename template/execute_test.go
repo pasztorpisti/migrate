@@ -1,7 +1,6 @@
 package template
 
 import (
-	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -141,17 +140,16 @@ func TestExecute(t *testing.T) {
 		sections, err := Parse("{cmd:my_command}")
 		require.NoError(t, err)
 
-		testErr := errors.New("test error")
 		_, err = Execute(sections, &ExecuteOptions{
 			LookupVar: func(name string) (string, bool) {
 				t.Fatal("unexpected LookupVar call")
 				return "", false
 			},
 			ExecCmd: func(command string, dir string, env []string) (string, error) {
-				return "", testErr
+				return "", assert.AnError
 			},
 		})
-		assert.EqualError(t, err, `error executing command "my_command": test error`)
+		assert.EqualError(t, err, `error executing command "my_command": `+assert.AnError.Error())
 	})
 
 	t.Run("invalid instruction", func(t *testing.T) {

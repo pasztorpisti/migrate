@@ -2,7 +2,6 @@ package migrate
 
 import (
 	"database/sql"
-	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -30,12 +29,11 @@ func TestDBWrapper(t *testing.T) {
 			db := NewMockstdDB(ctrl)
 			w := dbWrapper{db}
 
-			testErr := errors.New("test error")
-			db.EXPECT().Begin().Return(nil, testErr)
+			db.EXPECT().Begin().Return(nil, assert.AnError)
 
 			_, err := w.BeginTX()
 
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 
@@ -58,12 +56,11 @@ func TestDBWrapper(t *testing.T) {
 			db := NewMockstdDB(ctrl)
 			w := WrapDB(db)
 
-			testErr := errors.New("test error")
-			db.EXPECT().Query("test query", "arg1", 2).Return(nil, testErr)
+			db.EXPECT().Query("test query", "arg1", 2).Return(nil, assert.AnError)
 
 			_, err := w.Query("test query", "arg1", 2)
 
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 
@@ -86,12 +83,11 @@ func TestDBWrapper(t *testing.T) {
 			db := NewMockstdDB(ctrl)
 			w := WrapDB(db)
 
-			testErr := errors.New("test error")
-			db.EXPECT().Exec("test query", "arg1", 2).Return(nil, testErr)
+			db.EXPECT().Exec("test query", "arg1", 2).Return(nil, assert.AnError)
 
 			_, err := w.Exec("test query", "arg1", 2)
 
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 }
@@ -129,12 +125,11 @@ func TestTxWrapper(t *testing.T) {
 			tx := NewMockstdTx(ctrl)
 			w := wrapTx(tx)
 
-			testErr := errors.New("test error")
-			tx.EXPECT().Query("test query", "arg1", 2).Return(nil, testErr)
+			tx.EXPECT().Query("test query", "arg1", 2).Return(nil, assert.AnError)
 
 			_, err := w.Query("test query", "arg1", 2)
 
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 
@@ -157,12 +152,11 @@ func TestTxWrapper(t *testing.T) {
 			tx := NewMockstdTx(ctrl)
 			w := wrapTx(tx)
 
-			testErr := errors.New("test error")
-			tx.EXPECT().Exec("test query", "arg1", 2).Return(nil, testErr)
+			tx.EXPECT().Exec("test query", "arg1", 2).Return(nil, assert.AnError)
 
 			_, err := w.Exec("test query", "arg1", 2)
 
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 }
@@ -200,12 +194,11 @@ func TestRecursiveTXWrapper(t *testing.T) {
 			tx := NewMockTX(ctrl)
 			w := wrapTxWrapper(tx)
 
-			testErr := errors.New("test error")
-			tx.EXPECT().Query("test query", "arg1", 2).Return(nil, testErr)
+			tx.EXPECT().Query("test query", "arg1", 2).Return(nil, assert.AnError)
 
 			_, err := w.Query("test query", "arg1", 2)
 
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 
@@ -228,12 +221,11 @@ func TestRecursiveTXWrapper(t *testing.T) {
 			tx := NewMockTX(ctrl)
 			w := wrapTxWrapper(tx)
 
-			testErr := errors.New("test error")
-			tx.EXPECT().Exec("test query", "arg1", 2).Return(nil, testErr)
+			tx.EXPECT().Exec("test query", "arg1", 2).Return(nil, assert.AnError)
 
 			_, err := w.Exec("test query", "arg1", 2)
 
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 }

@@ -1,7 +1,6 @@
 package migrate
 
 import (
-	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -57,12 +56,11 @@ func TestSQLExecStep_Execute(t *testing.T) {
 			DB:     db,
 			Output: printer,
 		}
-		testErr := errors.New("test error")
 
-		db.EXPECT().Exec("fake query", []interface{}{"str", 42}).Return(nil, testErr)
+		db.EXPECT().Exec("fake query", []interface{}{"str", 42}).Return(nil, assert.AnError)
 
 		err := step.Execute(ctx)
-		assert.Equal(t, testErr, err)
+		assert.Equal(t, assert.AnError, err)
 	})
 }
 
@@ -311,11 +309,10 @@ func TestSteps_Execute(t *testing.T) {
 				Output: printer,
 			}
 
-			testErr := errors.New("test error")
-			step0.EXPECT().Execute(ctx).Return(testErr)
+			step0.EXPECT().Execute(ctx).Return(assert.AnError)
 
 			err := steps.Execute(ctx)
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 		t.Run("NumSteps=3 FailIndex=1", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -335,15 +332,13 @@ func TestSteps_Execute(t *testing.T) {
 				Output: printer,
 			}
 
-			testErr := errors.New("test error")
-
 			gomock.InOrder(
 				step0.EXPECT().Execute(ctx),
-				step1.EXPECT().Execute(ctx).Return(testErr),
+				step1.EXPECT().Execute(ctx).Return(assert.AnError),
 			)
 
 			err := steps.Execute(ctx)
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 		t.Run("NumSteps=3 FailIndex=2", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -363,16 +358,14 @@ func TestSteps_Execute(t *testing.T) {
 				Output: printer,
 			}
 
-			testErr := errors.New("test error")
-
 			gomock.InOrder(
 				step0.EXPECT().Execute(ctx),
 				step1.EXPECT().Execute(ctx),
-				step2.EXPECT().Execute(ctx).Return(testErr),
+				step2.EXPECT().Execute(ctx).Return(assert.AnError),
 			)
 
 			err := steps.Execute(ctx)
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 }
@@ -562,14 +555,12 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 				Output: printer,
 			}
 
-			testErr := errors.New("test error")
-
 			c0 := step0.EXPECT().AllowsTransaction().Return(true)
 			c1 := step1.EXPECT().AllowsTransaction().Return(false)
-			step0.EXPECT().Execute(ctx).Return(testErr).After(c0).After(c1)
+			step0.EXPECT().Execute(ctx).Return(assert.AnError).After(c0).After(c1)
 
 			err := steps.Execute(ctx)
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 		t.Run("NumSteps=2 AllowsTransaction=false FailIndex=1", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -587,16 +578,15 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 				Output: printer,
 			}
 
-			testErr := errors.New("test error")
 			c0 := step0.EXPECT().AllowsTransaction().Return(true)
 			c1 := step1.EXPECT().AllowsTransaction().Return(false)
 			gomock.InOrder(
 				step0.EXPECT().Execute(ctx).After(c0).After(c1),
-				step1.EXPECT().Execute(ctx).Return(testErr),
+				step1.EXPECT().Execute(ctx).Return(assert.AnError),
 			)
 
 			err := steps.Execute(ctx)
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 		t.Run("NumSteps=2 AllowsTransaction=true FailIndex=0", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -619,18 +609,16 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 				Output: printer,
 			}
 
-			testErr := errors.New("test error")
-
 			c0 := step0.EXPECT().AllowsTransaction().Return(true)
 			c1 := step1.EXPECT().AllowsTransaction().Return(true)
 			gomock.InOrder(
 				db.EXPECT().BeginTX().Return(tx, nil).After(c0).After(c1),
-				step0.EXPECT().Execute(ctx2).Return(testErr),
+				step0.EXPECT().Execute(ctx2).Return(assert.AnError),
 				tx.EXPECT().Rollback(),
 			)
 
 			err := steps.Execute(ctx)
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 		t.Run("NumSteps=2 AllowsTransaction=true FailIndex=1", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -653,19 +641,17 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 				Output: printer,
 			}
 
-			testErr := errors.New("test error")
-
 			c0 := step0.EXPECT().AllowsTransaction().Return(true)
 			c1 := step1.EXPECT().AllowsTransaction().Return(true)
 			gomock.InOrder(
 				db.EXPECT().BeginTX().Return(tx, nil).After(c0).After(c1),
 				step0.EXPECT().Execute(ctx2),
-				step1.EXPECT().Execute(ctx2).Return(testErr),
+				step1.EXPECT().Execute(ctx2).Return(assert.AnError),
 				tx.EXPECT().Rollback(),
 			)
 
 			err := steps.Execute(ctx)
-			assert.Equal(t, testErr, err)
+			assert.Equal(t, assert.AnError, err)
 		})
 	})
 }

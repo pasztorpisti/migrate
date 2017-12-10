@@ -11,8 +11,8 @@ import (
 
 const (
 	maxMigrationNameLength = 255
-	defaultForwardStr      = "forward"
-	defaultBackwardStr     = "backward"
+	defaultForwardStr      = "fw"
+	defaultBackwardStr     = "fw"
 )
 
 type migrationID struct {
@@ -134,7 +134,7 @@ func (o *parsedFilenamePattern) ParseFilename(filename string) (*parsedFilename,
 	}, nil
 }
 
-var errMissingRequiredFilenamePatternIDParameter = errors.New("the filename pattern doesn't contain the required {id} parameter")
+var errRequiredIDParameter = errors.New("the filename pattern doesn't contain the required {id} parameter")
 
 type errDuplicateFilenamePatternParameter string
 
@@ -252,11 +252,11 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 			formatStr += "%s"
 			formatArgs = append(formatArgs, "description")
 
-			regexStr += `(?P<description>` + regexp.QuoteMeta(descriptionPrefix) + `.+`
+			regexStr += `(` + regexp.QuoteMeta(descriptionPrefix) + `(?P<description>.*`
 			if descriptionSuffix != "" {
-				regexStr += regexp.QuoteMeta(descriptionSuffix)
+				regexStr += `)` + regexp.QuoteMeta(descriptionSuffix)
 			} else {
-				regexStr += `?`
+				regexStr += `?)`
 			}
 			regexStr += `)`
 			if optionalDescription {
@@ -270,7 +270,7 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 	regexStr += "$"
 
 	if !hasID {
-		return nil, errMissingRequiredFilenamePatternIDParameter
+		return nil, errRequiredIDParameter
 	}
 
 	regex := regexp.MustCompile(regexStr)
