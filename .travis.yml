@@ -2,12 +2,8 @@ language: go
 go:
   - 1.9.2
 
-install:
-  - make deps
-
 script:
-  - make test
-  - make build
+  - make all
 
 deploy:
   provider: releases

@@ -1,7 +1,7 @@
 SHELL = /bin/bash
 TAGS ?=
 
-all: deps test build
+all: check_go_fmt deps test build
 
 deps:
 	if [[ $$(uname) == "Linux" ]]; then \
@@ -49,4 +49,10 @@ build: clean
 clean:
 	rm -rf build
 
-.PHONY: all deps test build clean
+check_go_fmt:
+	@if [ -n "$$(gofmt -d $$(find . -name '*.go' -not -path './vendor/*'))" ]; then \
+		>&2 echo "The .go sources aren't formatted. Please format them with 'go fmt'."; \
+		exit 1; \
+	fi
+
+.PHONY: all deps test build clean check_go_fmt
