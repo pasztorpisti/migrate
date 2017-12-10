@@ -20,6 +20,7 @@ func CmdGoto(input *CmdGotoInput) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	execCtx := ExecCtx{
 		DB:     db,
@@ -38,7 +39,7 @@ type preparePlanInput struct {
 	MigrationID string
 }
 
-func preparePlanForCmd(input *preparePlanInput) (Steps, DB, error) {
+func preparePlanForCmd(input *preparePlanInput) (_ Steps, _ ClosableDB, retErr error) {
 	cfg, err := loadAndValidateDBConfig(input.ConfigFile, input.DB)
 	if err != nil {
 		return nil, nil, err
@@ -58,6 +59,11 @@ func preparePlanForCmd(input *preparePlanInput) (Steps, DB, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	defer func() {
+		if retErr != nil {
+			db.Close()
+		}
+	}()
 
 	mdb, err := driver.NewMigrationDB()
 	if err != nil {

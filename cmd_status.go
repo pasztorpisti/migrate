@@ -28,6 +28,7 @@ func CmdStatus(input *CmdStatusInput) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	mdb, err := driver.NewMigrationDB()
 	if err != nil {

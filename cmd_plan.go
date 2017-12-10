@@ -10,7 +10,7 @@ type CmdPlanInput struct {
 }
 
 func CmdPlan(input *CmdPlanInput) error {
-	steps, _, err := preparePlanForCmd(&preparePlanInput{
+	steps, db, err := preparePlanForCmd(&preparePlanInput{
 		Output:      input.Output,
 		ConfigFile:  input.ConfigFile,
 		DB:          input.DB,
@@ -19,6 +19,7 @@ func CmdPlan(input *CmdPlanInput) error {
 	if err != nil {
 		return err
 	}
+	db.Close()
 
 	steps.Print(PrintCtx{
 		Output:         input.Output,

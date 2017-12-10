@@ -34,7 +34,7 @@ type driver struct {
 	TableName string
 }
 
-func (*driver) Open(dataSourceName string) (migrate.DB, error) {
+func (*driver) Open(dataSourceName string) (migrate.ClosableDB, error) {
 	cfg, err := mysql.ParseDSN(dataSourceName)
 	if err != nil {
 		return nil, err
