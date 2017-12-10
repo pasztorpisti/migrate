@@ -1,5 +1,10 @@
 # IntelliJ IDE project files
 /.idea/
 
+/vendor/
+
+# created by `make build`
+/build/
+
 # executable created by `go build`
 /cmd/migrate/migrate

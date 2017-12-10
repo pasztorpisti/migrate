@@ -1,0 +1,26 @@
+language: go
+go:
+  - 1.9
+
+install:
+  - make deps
+
+script:
+  - make test
+  - make build
+
+deploy:
+  provider: releases
+  api_key:
+    secure: KIhzlQ6qOjnsuflwQ1/svQfIwtJepK0QcoBKk0E8Yh2jTsKSIEJ26MuLdBN+cdOwMx+ej5JhctmGrTVIpVZp/RQ/d65enMktJMjDVnHeMBfWN5ekCdvUGQj/FcQgEURUaIonk1VAd1nxblwhRuhxZwvwuHAQr2ub1vDicVKCS+ue1MBbUB9ziaMuZM0NEcXkWaTFdHlvZjxpOcTJTABTBzOL/n3t2If6LYlInfGd03/TUItAG4Ng1ZCIKuvnSCiLBBudfSEoqbUuAsErQFbNwhNhglFrPUTJn1y3Otjo7SnV4eIzsLpRGiPwEJICjhozkdRzDMUd61CP712wTdFvgPHAOvHVBDP0k4beij5gy00Riok+gmahUnxTL2HyQxRiMcOvfbGs0LNcyS45gvXWTVfgABlczJoufZilfczM+PDqvcvbhn5OaWBpTVkib/J9SavOe92MT4AzqfkIiaxpRyE1nafSt3MDoIsi4FgDufl/ehU5GA5Z2RKEdJceF23FCFICTbUFxK9YpMh2aArIqlrV53Pu7SgSClf1VSjwXPRdpHUdNRihHFj1P4P/lgN8aFWV7t1+ZSBvuYVLGy7dsWu2WkNKex5JocuDqhgtX++MaHPlZhsLw4ADmxFYu3oVkp6hqaKRM1OWYx1N0yquFcNZLwblTjFhy+CrePyY2mI=
+  skip_cleanup: true
+  on:
+    repo: pasztorpisti/migrate
+    tags: true
+  file:
+    - build/migrate-linux-amd64.zip
+    - build/migrate-linux-amd64.zip.sha256
+    - build/migrate-darwin-amd64.zip
+    - build/migrate-darwin-amd64.zip.sha256
+    - build/migrate-windows-amd64.zip
+    - build/migrate-windows-amd64.zip.sha256
