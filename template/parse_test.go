@@ -20,165 +20,165 @@ func TestParse(t *testing.T) {
 			{
 				template: "{}",
 				sections: []Section{
-					{Parameter: []string{""}},
+					{RawString: "{}", Parameter: []string{""}},
 				},
 			},
 			{
 				template: "{}{}",
 				sections: []Section{
-					{Parameter: []string{""}},
-					{Parameter: []string{""}},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "{}", Parameter: []string{""}},
 				},
 			},
 			{
 				template: "a",
 				sections: []Section{
-					{RawString: "a"},
+					{RawString: "a", String: "a"},
 				},
 			},
 			{
 				template: "a{}{}",
 				sections: []Section{
-					{RawString: "a"},
-					{Parameter: []string{""}},
-					{Parameter: []string{""}},
+					{RawString: "a", String: "a"},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "{}", Parameter: []string{""}},
 				},
 			},
 			{
 				template: "{}a{}",
 				sections: []Section{
-					{Parameter: []string{""}},
-					{RawString: "a"},
-					{Parameter: []string{""}},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "a", String: "a"},
+					{RawString: "{}", Parameter: []string{""}},
 				},
 			},
 			{
 				template: "{}{}a",
 				sections: []Section{
-					{Parameter: []string{""}},
-					{Parameter: []string{""}},
-					{RawString: "a"},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "a", String: "a"},
 				},
 			},
 			{
 				template: "{}a1{}b2",
 				sections: []Section{
-					{Parameter: []string{""}},
-					{RawString: "a1"},
-					{Parameter: []string{""}},
-					{RawString: "b2"},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "a1", String: "a1"},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "b2", String: "b2"},
 				},
 			},
 			{
 				template: "a1{}b2{}c3",
 				sections: []Section{
-					{RawString: "a1"},
-					{Parameter: []string{""}},
-					{RawString: "b2"},
-					{Parameter: []string{""}},
-					{RawString: "c3"},
+					{RawString: "a1", String: "a1"},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "b2", String: "b2"},
+					{RawString: "{}", Parameter: []string{""}},
+					{RawString: "c3", String: "c3"},
 				},
 			},
 			{
 				template: "\\{",
 				sections: []Section{
-					{RawString: "{"},
+					{RawString: "\\{", String: "{"},
 				},
 			},
 			{
 				template: "\\\\",
 				sections: []Section{
-					{RawString: "\\"},
+					{RawString: "\\\\", String: "\\"},
 				},
 			},
 			{
 				template: "\\r\\n\\t",
 				sections: []Section{
-					{RawString: "\r\n\t"},
+					{RawString: "\\r\\n\\t", String: "\r\n\t"},
 				},
 			},
 			{
 				template: "\\\\\\{",
 				sections: []Section{
-					{RawString: "\\{"},
+					{RawString: "\\\\\\{", String: "\\{"},
 				},
 			},
 			{
 				template: "{\\:}",
 				sections: []Section{
-					{Parameter: []string{":"}},
+					{RawString: "{\\:}", Parameter: []string{":"}},
 				},
 			},
 			{
 				template: "{a\\:b}",
 				sections: []Section{
-					{Parameter: []string{"a:b"}},
+					{RawString: "{a\\:b}", Parameter: []string{"a:b"}},
 				},
 			},
 			{
 				template: "{\\}}",
 				sections: []Section{
-					{Parameter: []string{"}"}},
+					{RawString: "{\\}}", Parameter: []string{"}"}},
 				},
 			},
 			{
 				template: "{\\}\\:\\}{}",
 				sections: []Section{
-					{Parameter: []string{"}:}{"}},
+					{RawString: "{\\}\\:\\}{}", Parameter: []string{"}:}{"}},
 				},
 			},
 			{
 				template: "}",
 				sections: []Section{
-					{RawString: "}"},
+					{RawString: "}", String: "}"},
 				},
 			},
 			{
 				template: ":",
 				sections: []Section{
-					{RawString: ":"},
+					{RawString: ":", String: ":"},
 				},
 			},
 			{
 				template: "a1:b2}c3",
 				sections: []Section{
-					{RawString: "a1:b2}c3"},
+					{RawString: "a1:b2}c3", String: "a1:b2}c3"},
 				},
 			},
 			{
 				template: "{:}",
 				sections: []Section{
-					{Parameter: []string{"", ""}},
+					{RawString: "{:}", Parameter: []string{"", ""}},
 				},
 			},
 			{
 				template: "{::}",
 				sections: []Section{
-					{Parameter: []string{"", "", ""}},
+					{RawString: "{::}", Parameter: []string{"", "", ""}},
 				},
 			},
 			{
 				template: "{a::}",
 				sections: []Section{
-					{Parameter: []string{"a", "", ""}},
+					{RawString: "{a::}", Parameter: []string{"a", "", ""}},
 				},
 			},
 			{
 				template: "{:a:}",
 				sections: []Section{
-					{Parameter: []string{"", "a", ""}},
+					{RawString: "{:a:}", Parameter: []string{"", "a", ""}},
 				},
 			},
 			{
 				template: "{::a}",
 				sections: []Section{
-					{Parameter: []string{"", "", "a"}},
+					{RawString: "{::a}", Parameter: []string{"", "", "a"}},
 				},
 			},
 			{
 				template: "{a1:b2:c3}",
 				sections: []Section{
-					{Parameter: []string{"a1", "b2", "c3"}},
+					{RawString: "{a1:b2:c3}", Parameter: []string{"a1", "b2", "c3"}},
 				},
 			},
 		}
@@ -226,166 +226,166 @@ func TestParseWithOptions(t *testing.T) {
 		{
 			template: "[]",
 			sections: []Section{
-				{Parameter: []string{""}},
+				{RawString: "[]", Parameter: []string{""}},
 			},
 		},
 		{
 			template: "[][]",
 			sections: []Section{
-				{Parameter: []string{""}},
-				{Parameter: []string{""}},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "[]", Parameter: []string{""}},
 			},
 		},
 		{
 			template: "a",
 			sections: []Section{
-				{RawString: "a"},
+				{RawString: "a", String: "a"},
 			},
 		},
 		{
 			template: "a[][]",
 			sections: []Section{
-				{RawString: "a"},
-				{Parameter: []string{""}},
-				{Parameter: []string{""}},
+				{RawString: "a", String: "a"},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "[]", Parameter: []string{""}},
 			},
 		},
 		{
 			template: "[]a[]",
 			sections: []Section{
-				{Parameter: []string{""}},
-				{RawString: "a"},
-				{Parameter: []string{""}},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "a", String: "a"},
+				{RawString: "[]", Parameter: []string{""}},
 			},
 		},
 		{
 			template: "[][]a",
 			sections: []Section{
-				{Parameter: []string{""}},
-				{Parameter: []string{""}},
-				{RawString: "a"},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "a", String: "a"},
 			},
 		},
 		{
 			template: "[]a1[]b2",
 			sections: []Section{
-				{Parameter: []string{""}},
-				{RawString: "a1"},
-				{Parameter: []string{""}},
-				{RawString: "b2"},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "a1", String: "a1"},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "b2", String: "b2"},
 			},
 		},
 		{
 			template: "a1[]b2[]c3",
 			sections: []Section{
-				{RawString: "a1"},
-				{Parameter: []string{""}},
-				{RawString: "b2"},
-				{Parameter: []string{""}},
-				{RawString: "c3"},
+				{RawString: "a1", String: "a1"},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "b2", String: "b2"},
+				{RawString: "[]", Parameter: []string{""}},
+				{RawString: "c3", String: "c3"},
 			},
 		},
 		{
 			template: "@[",
 			sections: []Section{
-				{RawString: "["},
+				{RawString: "@[", String: "["},
 			},
 		},
 		{
 			template: "@@",
 			sections: []Section{
-				{RawString: "@"},
+				{RawString: "@@", String: "@"},
 			},
 		},
 		{
 			template: "@@@[",
 			sections: []Section{
-				{RawString: "@["},
+				{RawString: "@@@[", String: "@["},
 			},
 		},
 		{
 			template: "[@|]",
 			sections: []Section{
-				{Parameter: []string{"|"}},
+				{RawString: "[@|]", Parameter: []string{"|"}},
 			},
 		},
 		{
 			template: "[a@|b]",
 			sections: []Section{
-				{Parameter: []string{"a|b"}},
+				{RawString: "[a@|b]", Parameter: []string{"a|b"}},
 			},
 		},
 		{
 			template: "[@]]",
 			sections: []Section{
-				{Parameter: []string{"]"}},
+				{RawString: "[@]]", Parameter: []string{"]"}},
 			},
 		},
 		{
 			template: "[@]@|@][]",
 			sections: []Section{
-				{Parameter: []string{"]|]["}},
+				{RawString: "[@]@|@][]", Parameter: []string{"]|]["}},
 			},
 		},
 		{
 			template: "]",
 			sections: []Section{
-				{RawString: "]"},
+				{RawString: "]", String: "]"},
 			},
 		},
 		{
 			template: "|",
 			sections: []Section{
-				{RawString: "|"},
+				{RawString: "|", String: "|"},
 			},
 		},
 		{
 			template: "a1|b2]c3",
 			sections: []Section{
-				{RawString: "a1|b2]c3"},
+				{RawString: "a1|b2]c3", String: "a1|b2]c3"},
 			},
 		},
 		{
 			template: "[|]",
 			sections: []Section{
-				{Parameter: []string{"", ""}},
+				{RawString: "[|]", Parameter: []string{"", ""}},
 			},
 		},
 		{
 			template: "[||]",
 			sections: []Section{
-				{Parameter: []string{"", "", ""}},
+				{RawString: "[||]", Parameter: []string{"", "", ""}},
 			},
 		},
 		{
 			template: "[a||]",
 			sections: []Section{
-				{Parameter: []string{"a", "", ""}},
+				{RawString: "[a||]", Parameter: []string{"a", "", ""}},
 			},
 		},
 		{
 			template: "[|a|]",
 			sections: []Section{
-				{Parameter: []string{"", "a", ""}},
+				{RawString: "[|a|]", Parameter: []string{"", "a", ""}},
 			},
 		},
 		{
 			template: "[||a]",
 			sections: []Section{
-				{Parameter: []string{"", "", "a"}},
+				{RawString: "[||a]", Parameter: []string{"", "", "a"}},
 			},
 		},
 		{
 			template: "[a1|b2|c3]",
 			sections: []Section{
-				{Parameter: []string{"a1", "b2", "c3"}},
+				{RawString: "[a1|b2|c3]", Parameter: []string{"a1", "b2", "c3"}},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%q", test.template), func(t *testing.T) {
-			opts := &ParseOptions{
+			opts := &Options{
 				ParamOpen:  '[',
 				ParamClose: ']',
 				ParamSplit: '|',
@@ -394,6 +394,52 @@ func TestParseWithOptions(t *testing.T) {
 			sections, err := ParseWithOptions(test.template, opts)
 			require.NoError(t, err)
 			assert.Equal(t, test.sections, sections)
+		})
+	}
+}
+
+func TestEscape(t *testing.T) {
+	tests := []*struct {
+		Str     string
+		Escaped string
+	}{
+		{"", ""},
+		{"ab c", "ab c"},
+		{"{abc}", "\\{abc\\}"},
+		{"{a:bc}", "\\{a\\:bc\\}"},
+		{"\\{:}", "\\\\\\{\\:\\}"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Str, func(t *testing.T) {
+			escaped := Escape(test.Str)
+			assert.Equal(t, test.Escaped, escaped)
+		})
+	}
+}
+
+func TestEscapeWithOptions(t *testing.T) {
+	tests := []*struct {
+		Str     string
+		Escaped string
+	}{
+		{"", ""},
+		{"ab c", "ab c"},
+		{"[abc]", "@[abc@]"},
+		{"[a|bc]", "@[a@|bc@]"},
+		{"@[|]", "@@@[@|@]"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Str, func(t *testing.T) {
+			opts := &Options{
+				ParamOpen:  '[',
+				ParamClose: ']',
+				ParamSplit: '|',
+				Escape:     '@',
+			}
+			escaped := EscapeWithOptions(test.Str, opts)
+			assert.Equal(t, test.Escaped, escaped)
 		})
 	}
 }

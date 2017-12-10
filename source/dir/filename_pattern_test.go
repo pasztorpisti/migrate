@@ -22,7 +22,7 @@ func TestFilenamePattern(t *testing.T) {
 			HasDirection        bool
 		}{
 			{
-				Pattern:             "{id}{description:_:_}.{direction:fw:bw}.sql",
+				Pattern:             "[id][description,prefix:_].[direction,forward:fw,backward:bw].sql",
 				Forward:             "0042_test_desc.fw.sql",
 				Backward:            "0042_test_desc.bw.sql",
 				Description:         description,
@@ -32,7 +32,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        true,
 			},
 			{
-				Pattern:             "{id}{description:_:_}.{direction:fw:bw}.sql",
+				Pattern:             "[id][description,prefix:_].[direction,forward:fw,backward:bw].sql",
 				Forward:             "0042.fw.sql",
 				Backward:            "0042.bw.sql",
 				IDSequence:          true,
@@ -41,7 +41,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        true,
 			},
 			{
-				Pattern:             "{description:_::_}{id}.{direction:fw:bw}.sql",
+				Pattern:             "[description,suffix:_][id].[direction,forward:fw,backward:bw].sql",
 				Forward:             "test_desc_0042.fw.sql",
 				Backward:            "test_desc_0042.bw.sql",
 				Description:         description,
@@ -51,8 +51,8 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        true,
 			},
 			{
-				Pattern:             "{description:_::_}{id}.{direction:foreward:backward}.sql",
-				Forward:             "0042.foreward.sql",
+				Pattern:             "[description,suffix:_][id].[direction,forward:forward,backward:backward].sql",
+				Forward:             "0042.forward.sql",
 				Backward:            "0042.backward.sql",
 				IDSequence:          true,
 				HasDescription:      true,
@@ -60,7 +60,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        true,
 			},
 			{
-				Pattern:             "{direction:fwd:bwd}.{description:.::.}{id}.sql",
+				Pattern:             "[direction,forward:fwd,backward:bwd].[description,space:.,suffix:.][id].sql",
 				Forward:             "fwd.test.desc.0042.sql",
 				Backward:            "bwd.test.desc.0042.sql",
 				Description:         description,
@@ -70,7 +70,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        true,
 			},
 			{
-				Pattern:             "{direction:fwd:bwd}.{description:_::_}{id}.sql",
+				Pattern:             "[direction,forward:fwd,backward:bwd].[description,suffix:_][id].sql",
 				Forward:             "fwd.0042.sql",
 				Backward:            "bwd.0042.sql",
 				IDSequence:          true,
@@ -79,7 +79,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        true,
 			},
 			{
-				Pattern:             "{direction}.{description:_::_}{id:unix_time:5}.sql",
+				Pattern:             "[direction].[description,suffix:_][id,generate:unix_time,width:5].sql",
 				Forward:             defaultForwardStr + ".00042.sql",
 				Backward:            defaultBackwardStr + ".00042.sql",
 				IDSequence:          false,
@@ -88,7 +88,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        true,
 			},
 			{
-				Pattern:             "{description}_{id:unix_time:5}.sql",
+				Pattern:             "[description]_[id,generate:unix_time,width:5].sql",
 				Forward:             "test_desc_00042.sql",
 				Backward:            "test_desc_00042.sql",
 				Description:         description,
@@ -98,7 +98,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        false,
 			},
 			{
-				Pattern:             "{description}_{id:unix_time:5}.sql",
+				Pattern:             "[description]_[id,generate:unix_time,width:5].sql",
 				Forward:             "_00042.sql",
 				Backward:            "_00042.sql",
 				IDSequence:          false,
@@ -107,7 +107,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        false,
 			},
 			{
-				Pattern:             "{id:sequence:1}.sql",
+				Pattern:             "[id,generate:sequence,width:1].sql",
 				Forward:             "42.sql",
 				Backward:            "42.sql",
 				IDSequence:          true,
@@ -116,7 +116,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        false,
 			},
 			{
-				Pattern:             "{id:unix_time:2}.sql",
+				Pattern:             "[id,generate:unix_time,width:2].sql",
 				Forward:             "42.sql",
 				Backward:            "42.sql",
 				IDSequence:          false,
@@ -125,7 +125,7 @@ func TestFilenamePattern(t *testing.T) {
 				HasDirection:        false,
 			},
 			{
-				Pattern:             "{id:unix_time:3}.sql",
+				Pattern:             "[id,generate:unix_time,width:3].sql",
 				Forward:             "042.sql",
 				Backward:            "042.sql",
 				IDSequence:          false,
@@ -171,15 +171,15 @@ func TestFilenamePattern(t *testing.T) {
 			Error   error
 		}{
 			{
-				Pattern: "{id}woof{id}",
+				Pattern: "[id]woof[id]}",
 				Error:   errDuplicateFilenamePatternParameter("id"),
 			},
 			{
-				Pattern: "{description}woof{description:.}",
+				Pattern: "[description]woof[description,space:.]",
 				Error:   errDuplicateFilenamePatternParameter("description"),
 			},
 			{
-				Pattern: "{direction}woof{direction:f:b}",
+				Pattern: "[direction]woof[direction,forward:f,backward:b]",
 				Error:   errDuplicateFilenamePatternParameter("direction"),
 			},
 		}
