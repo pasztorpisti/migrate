@@ -11,8 +11,8 @@ import (
 
 const (
 	maxMigrationNameLength = 255
-	defaultForwardStr      = "fw"
-	defaultBackwardStr     = "fw"
+	defaultForwardStr      = "forward"
+	defaultBackwardStr     = "backward"
 )
 
 type migrationID struct {
@@ -134,16 +134,21 @@ func (o *parsedFilenamePattern) ParseFilename(filename string) (*parsedFilename,
 	}, nil
 }
 
-var errRequiredIDParameter = errors.New("the filename pattern doesn't contain the required {id} parameter")
+var errRequiredIDParameter = errors.New("the filename pattern doesn't contain the required [id] parameter")
 
 type errDuplicateFilenamePatternParameter string
 
 func (o errDuplicateFilenamePatternParameter) Error() string {
-	return fmt.Sprintf("duplicate {%v} parameter", string(o))
+	return fmt.Sprintf("duplicate [%s] int filename template", string(o))
 }
 
 func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error) {
-	sections, err := template.Parse(filenamePattern)
+	sections, err := template.ParseWithOptions(filenamePattern, &template.Options{
+		ParamOpen:  '[',
+		ParamClose: ']',
+		ParamSplit: ',',
+		Escape:     '`',
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -173,36 +178,51 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 			continue
 		}
 
-		switch section.Parameter[0] {
+		sectionName, sectionParams, err := parseFilenameTemplateParam(section)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing section %q: %s", section.RawString, err)
+		}
+
+		takeParam := func(key string) (string, bool) {
+			val, ok := sectionParams[key]
+			if ok {
+				delete(sectionParams, key)
+			}
+			return val, ok
+		}
+
+		switch sectionName {
 		case "id":
 			if hasID {
 				return nil, errDuplicateFilenamePatternParameter("id")
 			}
 			hasID = true
 
-			if len(section.Parameter) > 3 {
-				return nil, fmt.Errorf("{id} has too many parameters: %q", section.Parameter)
-			}
-			if len(section.Parameter) >= 2 {
-				switch idType := section.Parameter[1]; idType {
+			if val, ok := takeParam("generate"); ok {
+				switch val {
 				case "sequence":
 					idSequence = true
 				case "unix_time":
 					idSequence = false
 				default:
-					return nil, fmt.Errorf("found {id:<type>} with an invalid type: %v", idType)
+					return nil, fmt.Errorf("invalid generate method %q in %q", val, section.RawString)
 				}
 			}
+
 			width := 4
-			if len(section.Parameter) >= 3 {
-				w, err := strconv.ParseInt(section.Parameter[2], 10, 0)
+			if val, ok := takeParam("width"); ok {
+				w, err := strconv.ParseInt(val, 10, 0)
 				if err != nil {
-					return nil, fmt.Errorf("found {id:<type>:<width>} with invalid width: %v", section.Parameter[2])
+					return nil, fmt.Errorf("invalid width parameter %q in %q", val, section.RawString)
 				}
-				if w < 1 {
-					return nil, fmt.Errorf("width=%v must be greater than zero in {id:<type>:<width>}", w)
+				if w < 1 || w > 50 {
+					return nil, fmt.Errorf("width must be between 1 and 50 in %q", section.RawString)
 				}
 				width = int(w)
+			}
+
+			if len(sectionParams) != 0 {
+				return nil, fmt.Errorf("[id] has some redundant parameters: %q", sectionParams)
 			}
 
 			formatStr += "%." + strconv.Itoa(width) + "d"
@@ -215,12 +235,19 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 			}
 			hasDirection = true
 
-			switch len(section.Parameter) {
-			case 1:
-			case 3:
-				forwardStr, backwardStr = section.Parameter[1], section.Parameter[2]
-			default:
-				return nil, fmt.Errorf("{section} and {section:<forwrad_string>:<backward_string>} are the only valid formats, got {%v}", strings.Join(section.Parameter, ":"))
+			fStr, fOK := takeParam("forward")
+			bStr, bOK := takeParam("backward")
+			if fOK != bOK {
+				return nil, fmt.Errorf("you have to define either both or none of the forward and backward parameters for %q", section.RawString)
+			}
+
+			if fOK {
+				forwardStr = fStr
+				backwardStr = bStr
+			}
+
+			if len(sectionParams) != 0 {
+				return nil, fmt.Errorf("[direction] has some redundant parameters: %q", sectionParams)
 			}
 
 			formatStr += "%s"
@@ -233,20 +260,22 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 			}
 			hasDescription = true
 
-			n := len(section.Parameter)
-			optionalDescription = n >= 3
+			if val, ok := takeParam("space"); ok {
+				descriptionSpace = val
+			}
+			pfx, pfxOK := takeParam("prefix")
+			sfx, sfxOK := takeParam("suffix")
+			optionalDescription = pfxOK || sfxOK
 
-			if n >= 2 {
-				descriptionSpace = section.Parameter[1]
+			if pfxOK {
+				descriptionPrefix = pfx
 			}
-			if n >= 3 {
-				descriptionPrefix = section.Parameter[2]
+			if sfxOK {
+				descriptionSuffix = sfx
 			}
-			if n >= 4 {
-				descriptionSuffix = section.Parameter[3]
-			}
-			if n >= 5 {
-				return nil, fmt.Errorf("{description} has too many parameters: %q", section.Parameter)
+
+			if len(sectionParams) != 0 {
+				return nil, fmt.Errorf("[description] has some redundant parameters: %q", sectionParams)
 			}
 
 			formatStr += "%s"
@@ -263,7 +292,7 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 				regexStr += `?`
 			}
 		default:
-			return nil, fmt.Errorf("invalid template parameter: {%v}", section.Parameter[0])
+			return nil, fmt.Errorf("invalid template parameter %q", section.RawString)
 		}
 	}
 
@@ -309,4 +338,26 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 		descriptionRegexIdx: descriptionRegexIdx,
 		directionRegexIdx:   directionRegexIdx,
 	}, nil
+}
+
+// parseFilenameTemplateParam receives a template parameter section with
+// a section like "[direction,forward:fwd,backward:bwd]" and returns
+// name="direction" and params=map[string]string{"forward":"fwd","backward":"bwd"}.
+func parseFilenameTemplateParam(s template.Section) (name string, params map[string]string, err error) {
+	name = s.Parameter[0]
+	params = make(map[string]string, len(s.Parameter)-1)
+	for _, p := range s.Parameter[1:] {
+		i := strings.IndexByte(p, ':')
+		if i <= 0 {
+			return "", nil, fmt.Errorf(`%q is an invalid parameter - it should be in "key:value" format`, p)
+		}
+		key := p[:i]
+		value := p[i+1:]
+		_, ok := params[key]
+		if ok {
+			return "", nil, fmt.Errorf(`%q is a duplicate parameter`, key)
+		}
+		params[key] = value
+	}
+	return name, params, nil
 }
