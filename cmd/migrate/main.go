@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/pasztorpisti/migrate"
 	"log"
 	"os"
+	"runtime"
 )
 
 const usage = `Usage: migrate [migrate_options] <command> [command_options] [command_args]
@@ -19,13 +21,13 @@ Migrate Options:
             Default: %s
 
 Commands:
-  new       Create a new migration file with ID=<current_unix_time>.
+  new       Create a new migration file.
   init      Create the migrations table in the DB if not exists.
-  goto      Go to a specific version of the DB schema by backward migrating
-            newer migrations and forward migrating older ones.
+  goto      Migrate to a specific version of the DB schema.
   plan      Print the plan that would be executed by a goto command.
   status    Print info about the current state of the migrations.
   hack      Manipulate a single migration step. Useful for troubleshooting.
+  version   Print version info.
 
 Use 'migrate <command> -help' for more info about a command.
 `
@@ -41,12 +43,13 @@ type migrateOptions struct {
 }
 
 var commands = map[string]func(opts *migrateOptions, args []string) error{
-	"new":    cmdNew,
-	"init":   cmdInit,
-	"goto":   cmdGoto,
-	"plan":   cmdPlan,
-	"status": cmdStatus,
-	"hack":   cmdHack,
+	"new":     cmdNew,
+	"init":    cmdInit,
+	"goto":    cmdGoto,
+	"plan":    cmdPlan,
+	"status":  cmdStatus,
+	"hack":    cmdHack,
+	"version": cmdVersion,
 }
 
 func main() {
@@ -311,4 +314,25 @@ func cmdHack(opts *migrateOptions, args []string) error {
 		UserOnly:    *useronly,
 		MetaOnly:    *metaonly,
 	})
+}
+
+var version string
+var gitHash string
+var buildDate string
+
+func cmdVersion(opts *migrateOptions, args []string) error {
+	if version == "" {
+		version = "dev"
+	}
+	fmt.Printf("version     : %s\n", version)
+	if buildDate != "" {
+		fmt.Printf("build date  : %s\n", buildDate)
+	}
+	if gitHash != "" {
+		fmt.Printf("git hash    : %s\n", gitHash)
+	}
+	fmt.Printf("go version  : %s\n", runtime.Version())
+	fmt.Printf("go compiler : %s\n", runtime.Compiler)
+	fmt.Printf("platform    : %s/%s\n", runtime.GOOS, runtime.GOARCH)
+	return nil
 }
