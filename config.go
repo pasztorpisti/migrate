@@ -3,8 +3,10 @@ package migrate
 import (
 	"errors"
 	"fmt"
+	"github.com/pasztorpisti/migrate/template"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
 )
 
 type dbConfig struct {
@@ -25,7 +27,37 @@ func (o *dbConfig) Validate() error {
 	if o.MigrationSource == "" {
 		return errors.New("migration_source must be set")
 	}
+
+	ms, err := performSubstitution(o.MigrationSource)
+	if err != nil {
+		return fmt.Errorf("error substituting template parameters to migration_source %q: %s", o.MigrationSource, err)
+	}
+	o.MigrationSource = ms
+
+	dsn, err := performSubstitution(o.DataSource)
+	if err != nil {
+		return fmt.Errorf("error substituting template parameters to data_source %q: %s", o.DataSource, err)
+	}
+	o.DataSource = dsn
+
+	dp, err := performSubstitution(o.DriverParams)
+	if err != nil {
+		return fmt.Errorf("error substituting template parameters to driver_params %q: %s", o.DriverParams, err)
+	}
+	o.DriverParams = dp
+
 	return nil
+}
+
+func performSubstitution(s string) (string, error) {
+	sections, err := template.Parse(s)
+	if err != nil {
+		return "", err
+	}
+	return template.Execute(sections, &template.ExecuteOptions{
+		LookupVar: os.LookupEnv,
+		ExecCmd:   template.RemoveTrailingNewlines(template.ExecCmd),
+	})
 }
 
 func loadConfigFile(filename string) (map[string]*dbConfig, error) {
