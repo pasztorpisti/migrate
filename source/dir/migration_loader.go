@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-const defaultFilenamePattern = "{id}{description:_:_}.sql"
+const defaultFilenamePattern = "[id][description,prefix:_].sql"
 
 type parsedMigrationSourceString struct {
 	MigrationsDir       string
