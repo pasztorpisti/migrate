@@ -69,9 +69,9 @@ func (m *MockDriver) EXPECT() *MockDriverMockRecorder {
 }
 
 // Open mocks base method
-func (m *MockDriver) Open(dataSourceName string) (DB, error) {
+func (m *MockDriver) Open(dataSourceName string) (ClosableDB, error) {
 	ret := m.ctrl.Call(m, "Open", dataSourceName)
-	ret0, _ := ret[0].(DB)
+	ret0, _ := ret[0].(ClosableDB)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

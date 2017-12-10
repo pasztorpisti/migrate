@@ -54,9 +54,12 @@ func performSubstitution(s string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return template.Execute(sections, &template.ExecuteOptions{
-		LookupVar: os.LookupEnv,
-		ExecCmd:   template.RemoveTrailingNewlines(template.ExecCmd),
+	return template.Execute(&template.ExecuteInput{
+		Sections:     sections,
+		LookupVar:    os.LookupEnv,
+		ExecCmd:      template.RemoveTrailingNewlines(template.ExecCmd),
+		VarParamName: "env",
+		CmdParamName: "cmd",
 	})
 }
 

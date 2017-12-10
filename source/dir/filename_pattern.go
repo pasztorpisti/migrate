@@ -167,7 +167,7 @@ func parseFilenamePattern(filenamePattern string) (*parsedFilenamePattern, error
 	regexStr := "^"
 
 	for _, section := range sections {
-		if section.IsRawString() {
+		if !section.IsParameter() {
 			formatStr += strings.Replace(section.RawString, "%", "%%", -1)
 			regexStr += regexp.QuoteMeta(section.RawString)
 			continue

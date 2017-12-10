@@ -23,7 +23,7 @@ func TestExecute(t *testing.T) {
 			},
 			{
 				name:     "variable",
-				template: `a{b}c{dd}e`,
+				template: `a{var:b}c{var:dd}e`,
 				result:   `a<b_val>c<dd_val>e`,
 				vars: map[string]string{
 					"b":  "<b_val>",
@@ -41,7 +41,7 @@ func TestExecute(t *testing.T) {
 			},
 			{
 				name:     "variable+cmd",
-				template: `a{var1}b{cmd:cmd1}c`,
+				template: `a{var:var1}b{cmd:cmd1}c`,
 				result:   `a<var1_val>b<cmd1_result>c`,
 				vars: map[string]string{
 					"var1": "<var1_val>",
@@ -57,7 +57,8 @@ func TestExecute(t *testing.T) {
 				sections, err := Parse(test.template)
 				require.NoError(t, err)
 
-				result, err := Execute(sections, &ExecuteOptions{
+				result, err := Execute(&ExecuteInput{
+					Sections: sections,
 					LookupVar: func(name string) (string, bool) {
 						v, ok := test.vars[name]
 						return v, ok
@@ -80,7 +81,8 @@ func TestExecute(t *testing.T) {
 		require.NoError(t, err)
 
 		numExecCalls := 0
-		result, err := Execute(sections, &ExecuteOptions{
+		result, err := Execute(&ExecuteInput{
+			Sections: sections,
 			LookupVar: func(name string) (string, bool) {
 				t.Fatal("unexpected LookupVar call")
 				return "", false
@@ -102,7 +104,8 @@ func TestExecute(t *testing.T) {
 		require.NoError(t, err)
 
 		numExecCalls := 0
-		result, err := Execute(sections, &ExecuteOptions{
+		result, err := Execute(&ExecuteInput{
+			Sections: sections,
 			LookupVar: func(name string) (string, bool) {
 				t.Fatal("unexpected LookupVar call")
 				return "", false
@@ -121,10 +124,11 @@ func TestExecute(t *testing.T) {
 	})
 
 	t.Run("undefined variable", func(t *testing.T) {
-		sections, err := Parse("{undefined}")
+		sections, err := Parse("{var:undefined}")
 		require.NoError(t, err)
 
-		_, err = Execute(sections, &ExecuteOptions{
+		_, err = Execute(&ExecuteInput{
+			Sections: sections,
 			LookupVar: func(name string) (string, bool) {
 				return "", false
 			},
@@ -133,14 +137,15 @@ func TestExecute(t *testing.T) {
 				return "", nil
 			},
 		})
-		assert.EqualError(t, err, `template variable "undefined" isn't defined`)
+		assert.EqualError(t, err, `template variable "{var:undefined}" isn't defined`)
 	})
 
 	t.Run("command failure", func(t *testing.T) {
 		sections, err := Parse("{cmd:my_command}")
 		require.NoError(t, err)
 
-		_, err = Execute(sections, &ExecuteOptions{
+		_, err = Execute(&ExecuteInput{
+			Sections: sections,
 			LookupVar: func(name string) (string, bool) {
 				t.Fatal("unexpected LookupVar call")
 				return "", false
@@ -156,7 +161,8 @@ func TestExecute(t *testing.T) {
 		sections, err := Parse("{invalid_instruction:instruction_param1:instruction_param2}")
 		require.NoError(t, err)
 
-		_, err = Execute(sections, &ExecuteOptions{
+		_, err = Execute(&ExecuteInput{
+			Sections: sections,
 			LookupVar: func(name string) (string, bool) {
 				t.Fatal("unexpected LookupVar call")
 				return "", false
@@ -167,5 +173,45 @@ func TestExecute(t *testing.T) {
 			},
 		})
 		assert.EqualError(t, err, `unknown template instruction: "invalid_instruction"`)
+	})
+
+	t.Run("ignore invalid instruction", func(t *testing.T) {
+		sections, err := Parse("{test-invalid-instruction:undefined}\\\\\\{\\}\\:")
+		require.NoError(t, err)
+
+		result, err := Execute(&ExecuteInput{
+			Sections: sections,
+			LookupVar: func(name string) (string, bool) {
+				t.Fatal("unexpected LookupVar call")
+				return "", false
+			},
+			ExecCmd: func(command string, dir string, env []string) (string, error) {
+				t.Fatal("unexpected ExecCmd call")
+				return "", nil
+			},
+			IgnoreUnknownTemplateParams: true,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "{test-invalid-instruction:undefined}\\{}:", result)
+	})
+
+	t.Run("escaped result", func(t *testing.T) {
+		sections, err := Parse("{var:MY_VAR}\\\\\\{\\}\\:")
+		require.NoError(t, err)
+
+		result, err := Execute(&ExecuteInput{
+			Sections: sections,
+			LookupVar: func(name string) (string, bool) {
+				assert.Equal(t, "MY_VAR", name)
+				return "{my:var:value}", true
+			},
+			ExecCmd: func(command string, dir string, env []string) (string, error) {
+				t.Fatal("unexpected ExecCmd call")
+				return "", nil
+			},
+			EscapedResult: true,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "\\{my\\:var\\:value\\}\\\\\\{\\}\\:", result)
 	})
 }
