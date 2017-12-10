@@ -2,9 +2,13 @@ package migrate
 
 import "time"
 
-type MigrationNameAndTime struct {
-	Name string
-	Time time.Time
+type DriverFactory interface {
+	NewDriver(params string) (Driver, error)
+}
+
+type Driver interface {
+	Open(dataSourceName string) (DB, error)
+	NewMigrationDB() (MigrationDB, error)
 }
 
 type MigrationDB interface {
@@ -14,24 +18,24 @@ type MigrationDB interface {
 	BackwardMigrate(migrationName string) (Step, error)
 }
 
-type Driver interface {
-	Open(dataSourceName string) (DB, error)
-	NewMigrationDB(tableName string) (MigrationDB, error)
+type MigrationNameAndTime struct {
+	Name string
+	Time time.Time
 }
 
-var GetDriver = driverRegistry.GetDriver
-var RegisterDriver = driverRegistry.RegisterDriver
+var GetDriver = driverRegistry.GetDriverFactory
+var RegisterDriver = driverRegistry.RegisterDriverFactory
 
-var driverRegistry = make(driverMap)
+var driverRegistry = make(driverFactoryMap)
 
-type driverMap map[string]Driver
+type driverFactoryMap map[string]DriverFactory
 
-func (o driverMap) GetDriver(name string) (d Driver, ok bool) {
+func (o driverFactoryMap) GetDriverFactory(name string) (d DriverFactory, ok bool) {
 	d, ok = o[name]
 	return
 }
 
-func (o driverMap) RegisterDriver(name string, d Driver) {
+func (o driverFactoryMap) RegisterDriverFactory(name string, d DriverFactory) {
 	_, ok := o[name]
 	if ok {
 		panic("duplicate database driver name: " + name)

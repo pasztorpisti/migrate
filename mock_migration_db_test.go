@@ -9,6 +9,91 @@ import (
 	reflect "reflect"
 )
 
+// MockDriverFactory is a mock of DriverFactory interface
+type MockDriverFactory struct {
+	ctrl     *gomock.Controller
+	recorder *MockDriverFactoryMockRecorder
+}
+
+// MockDriverFactoryMockRecorder is the mock recorder for MockDriverFactory
+type MockDriverFactoryMockRecorder struct {
+	mock *MockDriverFactory
+}
+
+// NewMockDriverFactory creates a new mock instance
+func NewMockDriverFactory(ctrl *gomock.Controller) *MockDriverFactory {
+	mock := &MockDriverFactory{ctrl: ctrl}
+	mock.recorder = &MockDriverFactoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockDriverFactory) EXPECT() *MockDriverFactoryMockRecorder {
+	return m.recorder
+}
+
+// NewDriver mocks base method
+func (m *MockDriverFactory) NewDriver(params string) (Driver, error) {
+	ret := m.ctrl.Call(m, "NewDriver", params)
+	ret0, _ := ret[0].(Driver)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewDriver indicates an expected call of NewDriver
+func (mr *MockDriverFactoryMockRecorder) NewDriver(params interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewDriver", reflect.TypeOf((*MockDriverFactory)(nil).NewDriver), params)
+}
+
+// MockDriver is a mock of Driver interface
+type MockDriver struct {
+	ctrl     *gomock.Controller
+	recorder *MockDriverMockRecorder
+}
+
+// MockDriverMockRecorder is the mock recorder for MockDriver
+type MockDriverMockRecorder struct {
+	mock *MockDriver
+}
+
+// NewMockDriver creates a new mock instance
+func NewMockDriver(ctrl *gomock.Controller) *MockDriver {
+	mock := &MockDriver{ctrl: ctrl}
+	mock.recorder = &MockDriverMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockDriver) EXPECT() *MockDriverMockRecorder {
+	return m.recorder
+}
+
+// Open mocks base method
+func (m *MockDriver) Open(dataSourceName string) (DB, error) {
+	ret := m.ctrl.Call(m, "Open", dataSourceName)
+	ret0, _ := ret[0].(DB)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Open indicates an expected call of Open
+func (mr *MockDriverMockRecorder) Open(dataSourceName interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockDriver)(nil).Open), dataSourceName)
+}
+
+// NewMigrationDB mocks base method
+func (m *MockDriver) NewMigrationDB() (MigrationDB, error) {
+	ret := m.ctrl.Call(m, "NewMigrationDB")
+	ret0, _ := ret[0].(MigrationDB)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewMigrationDB indicates an expected call of NewMigrationDB
+func (mr *MockDriverMockRecorder) NewMigrationDB() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewMigrationDB", reflect.TypeOf((*MockDriver)(nil).NewMigrationDB))
+}
+
 // MockMigrationDB is a mock of MigrationDB interface
 type MockMigrationDB struct {
 	ctrl     *gomock.Controller
@@ -82,53 +167,4 @@ func (m *MockMigrationDB) BackwardMigrate(migrationName string) (Step, error) {
 // BackwardMigrate indicates an expected call of BackwardMigrate
 func (mr *MockMigrationDBMockRecorder) BackwardMigrate(migrationName interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BackwardMigrate", reflect.TypeOf((*MockMigrationDB)(nil).BackwardMigrate), migrationName)
-}
-
-// MockDriver is a mock of Driver interface
-type MockDriver struct {
-	ctrl     *gomock.Controller
-	recorder *MockDriverMockRecorder
-}
-
-// MockDriverMockRecorder is the mock recorder for MockDriver
-type MockDriverMockRecorder struct {
-	mock *MockDriver
-}
-
-// NewMockDriver creates a new mock instance
-func NewMockDriver(ctrl *gomock.Controller) *MockDriver {
-	mock := &MockDriver{ctrl: ctrl}
-	mock.recorder = &MockDriverMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockDriver) EXPECT() *MockDriverMockRecorder {
-	return m.recorder
-}
-
-// Open mocks base method
-func (m *MockDriver) Open(dataSourceName string) (DB, error) {
-	ret := m.ctrl.Call(m, "Open", dataSourceName)
-	ret0, _ := ret[0].(DB)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Open indicates an expected call of Open
-func (mr *MockDriverMockRecorder) Open(dataSourceName interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockDriver)(nil).Open), dataSourceName)
-}
-
-// NewMigrationDB mocks base method
-func (m *MockDriver) NewMigrationDB(tableName string) (MigrationDB, error) {
-	ret := m.ctrl.Call(m, "NewMigrationDB", tableName)
-	ret0, _ := ret[0].(MigrationDB)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// NewMigrationDB indicates an expected call of NewMigrationDB
-func (mr *MockDriverMockRecorder) NewMigrationDB(tableName interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewMigrationDB", reflect.TypeOf((*MockDriver)(nil).NewMigrationDB), tableName)
 }

@@ -278,7 +278,7 @@ func cmdHack(opts *migrateOptions, args []string) error {
 
 	if fs.NArg() != 2 {
 		if fs.NArg() > 2 {
-			log.Printf("Unwanted extra arguments: %q", fs.Args()[1:])
+			log.Printf("Unwanted extra arguments: %q", fs.Args()[2:])
 		}
 		fs.Usage()
 		os.Exit(1)

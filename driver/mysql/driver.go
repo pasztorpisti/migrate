@@ -5,15 +5,36 @@ import (
 	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pasztorpisti/migrate"
+	"net/url"
 )
 
 func init() {
-	migrate.RegisterDriver("mysql", driver{})
+	migrate.RegisterDriver("mysql", driverFactory{})
 }
 
-type driver struct{}
+type driverFactory struct{}
 
-func (driver) Open(dataSourceName string) (migrate.DB, error) {
+func (o driverFactory) NewDriver(params string) (migrate.Driver, error) {
+	values, err := url.ParseQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("can't parse driver parameters %q: %s", params, err)
+	}
+
+	tableName := values.Get("migrations_table")
+	if tableName == "" {
+		tableName = "migrations"
+	}
+
+	return &driver{
+		TableName: tableName,
+	}, nil
+}
+
+type driver struct {
+	TableName string
+}
+
+func (*driver) Open(dataSourceName string) (migrate.DB, error) {
 	cfg, err := mysql.ParseDSN(dataSourceName)
 	if err != nil {
 		return nil, err
@@ -28,6 +49,6 @@ func (driver) Open(dataSourceName string) (migrate.DB, error) {
 	return migrate.WrapDB(db), nil
 }
 
-func (driver) NewMigrationDB(tableName string) (migrate.MigrationDB, error) {
-	return newMigrationDB(tableName)
+func (o *driver) NewMigrationDB() (migrate.MigrationDB, error) {
+	return newMigrationDB(o.TableName)
 }
