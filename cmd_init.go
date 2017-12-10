@@ -27,6 +27,7 @@ func CmdInit(input *CmdInitInput) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	mdb, err := driver.NewMigrationDB()
 	if err != nil {

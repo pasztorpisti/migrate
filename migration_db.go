@@ -7,7 +7,7 @@ type DriverFactory interface {
 }
 
 type Driver interface {
-	Open(dataSourceName string) (DB, error)
+	Open(dataSourceName string) (ClosableDB, error)
 	NewMigrationDB() (MigrationDB, error)
 }
 
