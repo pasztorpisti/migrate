@@ -25,6 +25,11 @@ type DB interface {
 	BeginTX() (TX, error)
 }
 
+type ClosableDB interface {
+	DB
+	Close() error
+}
+
 type TX interface {
 	DB
 	TXCloser
@@ -40,6 +45,7 @@ type stdDB interface {
 	Querier
 	Execer
 	Begin() (*sql.Tx, error)
+	Close() error
 }
 
 // stdTx is used instead of *sql.Tx in a few places to make the code easier to test.
@@ -49,7 +55,7 @@ type stdTx interface {
 	TXCloser
 }
 
-func WrapDB(db stdDB) DB {
+func WrapDB(db stdDB) ClosableDB {
 	return dbWrapper{db}
 }
 
