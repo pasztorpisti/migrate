@@ -25,3 +25,8 @@ deploy:
     - build/migrate-darwin-amd64.zip.sha256
     - build/migrate-windows-amd64.zip
     - build/migrate-windows-amd64.zip.sha256
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
