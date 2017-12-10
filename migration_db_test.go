@@ -28,6 +28,7 @@ func TestRegisterDriver(t *testing.T) {
 
 		registry.RegisterDriverFactory(name, df2)
 		assert.True(t, panicked)
+		ctrl.Finish()
 	})
 
 	t.Run("Register nil driver", func(t *testing.T) {
@@ -59,6 +60,7 @@ func TestGetDriver(t *testing.T) {
 		res, ok := registry.GetDriverFactory(name)
 		assert.True(t, ok)
 		assert.Equal(t, df, res)
+		ctrl.Finish()
 	})
 
 	t.Run("Get missing driver", func(t *testing.T) {

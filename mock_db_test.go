@@ -164,6 +164,90 @@ func (mr *MockDBMockRecorder) BeginTX() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTX", reflect.TypeOf((*MockDB)(nil).BeginTX))
 }
 
+// MockClosableDB is a mock of ClosableDB interface
+type MockClosableDB struct {
+	ctrl     *gomock.Controller
+	recorder *MockClosableDBMockRecorder
+}
+
+// MockClosableDBMockRecorder is the mock recorder for MockClosableDB
+type MockClosableDBMockRecorder struct {
+	mock *MockClosableDB
+}
+
+// NewMockClosableDB creates a new mock instance
+func NewMockClosableDB(ctrl *gomock.Controller) *MockClosableDB {
+	mock := &MockClosableDB{ctrl: ctrl}
+	mock.recorder = &MockClosableDBMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockClosableDB) EXPECT() *MockClosableDBMockRecorder {
+	return m.recorder
+}
+
+// Query mocks base method
+func (m *MockClosableDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	varargs := []interface{}{query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Query", varargs...)
+	ret0, _ := ret[0].(*sql.Rows)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Query indicates an expected call of Query
+func (mr *MockClosableDBMockRecorder) Query(query interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockClosableDB)(nil).Query), varargs...)
+}
+
+// Exec mocks base method
+func (m *MockClosableDB) Exec(query string, args ...interface{}) (sql.Result, error) {
+	varargs := []interface{}{query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Exec", varargs...)
+	ret0, _ := ret[0].(sql.Result)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Exec indicates an expected call of Exec
+func (mr *MockClosableDBMockRecorder) Exec(query interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockClosableDB)(nil).Exec), varargs...)
+}
+
+// BeginTX mocks base method
+func (m *MockClosableDB) BeginTX() (TX, error) {
+	ret := m.ctrl.Call(m, "BeginTX")
+	ret0, _ := ret[0].(TX)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTX indicates an expected call of BeginTX
+func (mr *MockClosableDBMockRecorder) BeginTX() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTX", reflect.TypeOf((*MockClosableDB)(nil).BeginTX))
+}
+
+// Close mocks base method
+func (m *MockClosableDB) Close() error {
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close
+func (mr *MockClosableDBMockRecorder) Close() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClosableDB)(nil).Close))
+}
+
 // MockTX is a mock of TX interface
 type MockTX struct {
 	ctrl     *gomock.Controller
@@ -377,6 +461,18 @@ func (m *MockstdDB) Begin() (*sql.Tx, error) {
 // Begin indicates an expected call of Begin
 func (mr *MockstdDBMockRecorder) Begin() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Begin", reflect.TypeOf((*MockstdDB)(nil).Begin))
+}
+
+// Close mocks base method
+func (m *MockstdDB) Close() error {
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close
+func (mr *MockstdDBMockRecorder) Close() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockstdDB)(nil).Close))
 }
 
 // MockstdTx is a mock of stdTx interface

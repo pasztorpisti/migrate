@@ -41,6 +41,7 @@ func TestSQLExecStep_Execute(t *testing.T) {
 
 		err := step.Execute(ctx)
 		assert.NoError(t, err)
+		ctrl.Finish()
 	})
 	t.Run("DB Error", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -61,6 +62,7 @@ func TestSQLExecStep_Execute(t *testing.T) {
 
 		err := step.Execute(ctx)
 		assert.Equal(t, assert.AnError, err)
+		ctrl.Finish()
 	})
 }
 
@@ -79,6 +81,7 @@ func TestSQLExecStep_Print(t *testing.T) {
 			PrintSQL: false,
 		}
 		step.Print(ctx)
+		ctrl.Finish()
 	})
 	t.Run("IsSystem=false PrintSQL=true", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -98,6 +101,8 @@ func TestSQLExecStep_Print(t *testing.T) {
 		writer.EXPECT().Write(gomock.Any()).MinTimes(1)
 
 		step.Print(ctx)
+
+		ctrl.Finish()
 	})
 	t.Run("IsSystem=true PrintSystemSQL=false", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -113,6 +118,7 @@ func TestSQLExecStep_Print(t *testing.T) {
 			PrintSystemSQL: false,
 		}
 		step.Print(ctx)
+		ctrl.Finish()
 	})
 	t.Run("IsSystem=true PrintSystemSQL=true", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -132,6 +138,7 @@ func TestSQLExecStep_Print(t *testing.T) {
 		writer.EXPECT().Write(gomock.Any()).MinTimes(1)
 
 		step.Print(ctx)
+		ctrl.Finish()
 	})
 }
 
@@ -148,6 +155,7 @@ func TestSteps_AllowsTransaction(t *testing.T) {
 		step0.EXPECT().AllowsTransaction().Return(false)
 
 		assert.False(t, steps.AllowsTransaction())
+		ctrl.Finish()
 	})
 	t.Run("NumSteps=1 AllowTransaction=true", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -157,6 +165,7 @@ func TestSteps_AllowsTransaction(t *testing.T) {
 		step0.EXPECT().AllowsTransaction().Return(true)
 
 		assert.True(t, steps.AllowsTransaction())
+		ctrl.Finish()
 	})
 	t.Run("NumSteps=2 AllowTransaction=[false,false]", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -165,9 +174,9 @@ func TestSteps_AllowsTransaction(t *testing.T) {
 		steps := Steps{step0, step1}
 
 		step0.EXPECT().AllowsTransaction().Return(false)
-		step1.EXPECT().AllowsTransaction().Return(false)
 
 		assert.False(t, steps.AllowsTransaction())
+		ctrl.Finish()
 	})
 	t.Run("NumSteps=2 AllowTransaction=[false,true]", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -176,9 +185,9 @@ func TestSteps_AllowsTransaction(t *testing.T) {
 		steps := Steps{step0, step1}
 
 		step0.EXPECT().AllowsTransaction().Return(false)
-		step1.EXPECT().AllowsTransaction().Return(true)
 
 		assert.False(t, steps.AllowsTransaction())
+		ctrl.Finish()
 	})
 	t.Run("NumSteps=2 AllowTransaction=[true,false]", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -190,6 +199,7 @@ func TestSteps_AllowsTransaction(t *testing.T) {
 		step1.EXPECT().AllowsTransaction().Return(false)
 
 		assert.False(t, steps.AllowsTransaction())
+		ctrl.Finish()
 	})
 	t.Run("NumSteps=2 AllowTransaction=[true,true]", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -201,6 +211,7 @@ func TestSteps_AllowsTransaction(t *testing.T) {
 		step1.EXPECT().AllowsTransaction().Return(true)
 
 		assert.True(t, steps.AllowsTransaction())
+		ctrl.Finish()
 	})
 }
 
@@ -218,6 +229,7 @@ func TestSteps_Execute(t *testing.T) {
 			}
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=1", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -237,6 +249,7 @@ func TestSteps_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=2", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -261,6 +274,7 @@ func TestSteps_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=3", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -288,6 +302,7 @@ func TestSteps_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 	})
 	t.Run("DB Error", func(t *testing.T) {
@@ -313,6 +328,7 @@ func TestSteps_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=3 FailIndex=1", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -339,6 +355,7 @@ func TestSteps_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=3 FailIndex=2", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -366,6 +383,7 @@ func TestSteps_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 }
@@ -379,6 +397,7 @@ func TestSteps_Print(t *testing.T) {
 			Output: printer,
 		}
 		steps.Print(ctx)
+		ctrl.Finish()
 	})
 	t.Run("NumSteps=1", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -392,6 +411,7 @@ func TestSteps_Print(t *testing.T) {
 		step0.EXPECT().Print(ctx)
 
 		steps.Print(ctx)
+		ctrl.Finish()
 	})
 	t.Run("NumSteps=2", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -409,6 +429,7 @@ func TestSteps_Print(t *testing.T) {
 		)
 
 		steps.Print(ctx)
+		ctrl.Finish()
 	})
 }
 
@@ -426,6 +447,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 			}
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=1 AllowsTransaction=false", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -448,6 +470,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=1 AllowsTransaction=true", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -476,6 +499,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=2 AllowsTransaction=false", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -503,6 +527,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=2 AllowsTransaction=true", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -536,6 +561,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.NoError(t, err)
+			ctrl.Finish()
 		})
 	})
 	t.Run("DB Error", func(t *testing.T) {
@@ -561,6 +587,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=2 AllowsTransaction=false FailIndex=1", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -587,6 +614,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=2 AllowsTransaction=true FailIndex=0", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -619,6 +647,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 		t.Run("NumSteps=2 AllowsTransaction=true FailIndex=1", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -652,6 +681,7 @@ func TestTransactionIfAllowed_Execute(t *testing.T) {
 
 			err := steps.Execute(ctx)
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 }
@@ -672,6 +702,7 @@ func TestStepTitleAndResult(t *testing.T) {
 		wrapped.EXPECT().Print(ctx)
 
 		step.Print(ctx)
+		ctrl.Finish()
 	})
 	t.Run("NonEmpty Title", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -692,5 +723,6 @@ func TestStepTitleAndResult(t *testing.T) {
 		)
 
 		step.Print(ctx)
+		ctrl.Finish()
 	})
 }

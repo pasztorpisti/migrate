@@ -23,6 +23,7 @@ func TestDBWrapper(t *testing.T) {
 			assert.NotNil(t, tx)
 			assert.NotEqual(t, w, tx)
 			assert.NotEqual(t, fakeTx, tx)
+			ctrl.Finish()
 		})
 		t.Run("Error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -34,6 +35,34 @@ func TestDBWrapper(t *testing.T) {
 			_, err := w.BeginTX()
 
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
+		})
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		t.Run("Success", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			db := NewMockstdDB(ctrl)
+			w := WrapDB(db)
+
+			db.EXPECT().Close()
+
+			err := w.Close()
+
+			assert.NoError(t, err)
+			ctrl.Finish()
+		})
+		t.Run("Error", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			db := NewMockstdDB(ctrl)
+			w := WrapDB(db)
+
+			db.EXPECT().Close().Return(assert.AnError)
+
+			err := w.Close()
+
+			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 
@@ -50,6 +79,7 @@ func TestDBWrapper(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, rows, res)
+			ctrl.Finish()
 		})
 		t.Run("Error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -61,6 +91,7 @@ func TestDBWrapper(t *testing.T) {
 			_, err := w.Query("test query", "arg1", 2)
 
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 
@@ -77,6 +108,7 @@ func TestDBWrapper(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, sqlRes, res)
+			ctrl.Finish()
 		})
 		t.Run("Error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -88,6 +120,7 @@ func TestDBWrapper(t *testing.T) {
 			_, err := w.Exec("test query", "arg1", 2)
 
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 }
@@ -104,6 +137,7 @@ func TestTxWrapper(t *testing.T) {
 		assert.NotNil(t, rtx)
 		assert.NotEqual(t, tx, rtx)
 		assert.NotEqual(t, w, rtx)
+		ctrl.Finish()
 	})
 
 	t.Run("Query", func(t *testing.T) {
@@ -119,6 +153,7 @@ func TestTxWrapper(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, rows, res)
+			ctrl.Finish()
 		})
 		t.Run("Error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -130,6 +165,7 @@ func TestTxWrapper(t *testing.T) {
 			_, err := w.Query("test query", "arg1", 2)
 
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 
@@ -146,6 +182,7 @@ func TestTxWrapper(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, sqlRes, res)
+			ctrl.Finish()
 		})
 		t.Run("Error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -157,6 +194,7 @@ func TestTxWrapper(t *testing.T) {
 			_, err := w.Exec("test query", "arg1", 2)
 
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 }
@@ -173,6 +211,7 @@ func TestRecursiveTXWrapper(t *testing.T) {
 		assert.NotNil(t, rtx)
 		assert.NotEqual(t, w, rtx)
 		assert.NotEqual(t, tx, rtx)
+		ctrl.Finish()
 	})
 
 	t.Run("Query", func(t *testing.T) {
@@ -188,6 +227,7 @@ func TestRecursiveTXWrapper(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, rows, res)
+			ctrl.Finish()
 		})
 		t.Run("Error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -199,6 +239,7 @@ func TestRecursiveTXWrapper(t *testing.T) {
 			_, err := w.Query("test query", "arg1", 2)
 
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 
@@ -215,6 +256,7 @@ func TestRecursiveTXWrapper(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, sqlRes, res)
+			ctrl.Finish()
 		})
 		t.Run("Error", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -226,6 +268,7 @@ func TestRecursiveTXWrapper(t *testing.T) {
 			_, err := w.Exec("test query", "arg1", 2)
 
 			assert.Equal(t, assert.AnError, err)
+			ctrl.Finish()
 		})
 	})
 }
@@ -250,6 +293,8 @@ func TestNestedTransactions(t *testing.T) {
 		assert.NoError(t, err)
 		err = rtx.Commit()
 		assert.NoError(t, err)
+
+		ctrl.Finish()
 	})
 
 	t.Run("Rollback all", func(t *testing.T) {
@@ -271,6 +316,8 @@ func TestNestedTransactions(t *testing.T) {
 		assert.NoError(t, err)
 		err = rtx.Rollback()
 		assert.NoError(t, err)
+
+		ctrl.Finish()
 	})
 
 	t.Run("Commit fails after Rollback", func(t *testing.T) {
@@ -293,6 +340,8 @@ func TestNestedTransactions(t *testing.T) {
 			assert.NoError(t, err)
 			err = rtx.Commit()
 			assert.Equal(t, errCommitAfterChildRollback, err)
+
+			ctrl.Finish()
 		})
 		t.Run("Rollback-Rollback-Commit", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -315,6 +364,8 @@ func TestNestedTransactions(t *testing.T) {
 			assert.NoError(t, err)
 			err = tx.Commit()
 			assert.Equal(t, errCommitAfterChildRollback, err)
+
+			ctrl.Finish()
 		})
 		t.Run("Commit-Rollback-Commit", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -337,6 +388,8 @@ func TestNestedTransactions(t *testing.T) {
 			assert.NoError(t, err)
 			err = tx.Commit()
 			assert.Equal(t, errCommitAfterChildRollback, err)
+
+			ctrl.Finish()
 		})
 	})
 
@@ -363,6 +416,8 @@ func TestNestedTransactions(t *testing.T) {
 				assert.Equal(t, errCommitFinishedTX, err)
 				err = rtx2.Rollback()
 				assert.Equal(t, errRollbackFinishedTX, err)
+
+				ctrl.Finish()
 			})
 			t.Run("Level2", func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -387,6 +442,8 @@ func TestNestedTransactions(t *testing.T) {
 				assert.Equal(t, errCommitFinishedTX, err)
 				err = rtx.Rollback()
 				assert.Equal(t, errRollbackFinishedTX, err)
+
+				ctrl.Finish()
 			})
 		})
 
@@ -412,6 +469,8 @@ func TestNestedTransactions(t *testing.T) {
 				assert.Equal(t, errCommitFinishedTX, err)
 				err = rtx2.Rollback()
 				assert.Equal(t, errRollbackFinishedTX, err)
+
+				ctrl.Finish()
 			})
 			t.Run("Level2", func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -436,6 +495,8 @@ func TestNestedTransactions(t *testing.T) {
 				assert.Equal(t, errCommitAfterChildRollback, err)
 				err = rtx.Rollback()
 				assert.Equal(t, errRollbackFinishedTX, err)
+
+				ctrl.Finish()
 			})
 		})
 	})
@@ -459,6 +520,8 @@ func TestNestedTransactions(t *testing.T) {
 
 				err = rtx.Commit()
 				assert.Equal(t, errCommitWithUnfinishedChildren, err)
+
+				ctrl.Finish()
 			})
 			t.Run("Level1", func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -475,6 +538,8 @@ func TestNestedTransactions(t *testing.T) {
 
 				err = tx.Commit()
 				assert.Equal(t, errCommitWithUnfinishedChildren, err)
+
+				ctrl.Finish()
 			})
 		})
 		t.Run("Rollback with unfinished child tx", func(t *testing.T) {
@@ -495,6 +560,8 @@ func TestNestedTransactions(t *testing.T) {
 
 				err = rtx.Rollback()
 				assert.Equal(t, errRollbackWithUnfinishedChildren, err)
+
+				ctrl.Finish()
 			})
 			t.Run("Level1", func(t *testing.T) {
 				ctrl := gomock.NewController(t)
@@ -511,6 +578,8 @@ func TestNestedTransactions(t *testing.T) {
 
 				err = tx.Rollback()
 				assert.Equal(t, errRollbackWithUnfinishedChildren, err)
+
+				ctrl.Finish()
 			})
 		})
 	})

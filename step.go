@@ -39,7 +39,10 @@ func (o *SQLExecStep) AllowsTransaction() bool {
 }
 
 func (o *SQLExecStep) Print(ctx PrintCtx) {
-	if !ctx.PrintSQL || o.Query == "" {
+	if o.Query == "" {
+		return
+	}
+	if !o.IsSystem && !ctx.PrintSQL {
 		return
 	}
 	if o.IsSystem && !ctx.PrintSystemSQL {
