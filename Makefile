@@ -17,6 +17,7 @@ deps:
 	dep ensure -vendor-only
 
 test:
+	go vet -tags=$(TAGS) ./...
 	go test -tags=$(TAGS) ./...
 
 build: clean
