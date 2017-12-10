@@ -3,6 +3,7 @@ package migrate
 import "fmt"
 
 type CmdInitInput struct {
+	Output     Printer
 	ConfigFile string
 	DB         string
 }
@@ -33,13 +34,23 @@ func CmdInit(input *CmdInitInput) error {
 	if err != nil {
 		return err
 	}
-	step, err := mdb.CreateTableIfNotExists()
+	step, err := mdb.CreateTable()
 	if err != nil {
 		return err
 	}
 
-	return step.Execute(ExecCtx{
+	err = step.Execute(ExecCtx{
 		DB:     db,
 		Output: nullPrinter{},
 	})
+
+	switch err {
+	case nil:
+		input.Output.Println("Init success.")
+	case ErrMigrationsTableAlreadyExists:
+		input.Output.Println("Already initialised.")
+		err = nil
+	}
+
+	return err
 }

@@ -1,6 +1,9 @@
 package migrate
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type DriverFactory interface {
 	NewDriver(params string) (Driver, error)
@@ -11,9 +14,15 @@ type Driver interface {
 	NewMigrationDB() (MigrationDB, error)
 }
 
+// ErrMigrationsTableAlreadyExists can be returned by the Step returned by
+// MigrationDB.CreateTable. Detecting this condition in the MigrationDB
+// implementation is optional. It is valid to return nil (no error) when
+// the table already exists if implementing the check isn't possible.
+var ErrMigrationsTableAlreadyExists = errors.New("the migrations table already exists")
+
 type MigrationDB interface {
 	GetForwardMigrations(Querier) ([]*MigrationNameAndTime, error)
-	CreateTableIfNotExists() (Step, error)
+	CreateTable() (Step, error)
 	ForwardMigrate(migrationName string) (Step, error)
 	BackwardMigrate(migrationName string) (Step, error)
 }
