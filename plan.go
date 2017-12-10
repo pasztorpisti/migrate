@@ -80,14 +80,14 @@ func Plan(input *PlanInput) (Steps, error) {
 			return nil, fmt.Errorf("%q doesn't have a backward step", name)
 		}
 
-		updateMetaStep, err := input.MigrationDB.BackwardMigrate(name)
+		updateSystemStep, err := input.MigrationDB.BackwardMigrate(name)
 		if err != nil {
 			return nil, err
 		}
 
 		s := Steps{
 			backwardStep,
-			updateMetaStep,
+			updateSystemStep,
 		}
 		steps = append(steps, &StepTitleAndResult{
 			Step:  TransactionIfAllowed{s},
@@ -107,14 +107,14 @@ func Plan(input *PlanInput) (Steps, error) {
 			return nil, fmt.Errorf("error loading forward step for migration %q", name)
 		}
 
-		updateMetaStep, err := input.MigrationDB.ForwardMigrate(name)
+		updateSystemStep, err := input.MigrationDB.ForwardMigrate(name)
 		if err != nil {
 			return nil, err
 		}
 
 		s := Steps{
 			forwardStep,
-			updateMetaStep,
+			updateSystemStep,
 		}
 		steps = append(steps, &StepTitleAndResult{
 			Step:  TransactionIfAllowed{s},

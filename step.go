@@ -17,16 +17,16 @@ type ExecCtx struct {
 }
 
 type PrintCtx struct {
-	Output       Printer
-	PrintSQL     bool
-	PrintMetaSQL bool
+	Output         Printer
+	PrintSQL       bool
+	PrintSystemSQL bool
 }
 
 type SQLExecStep struct {
 	Query         string
 	Args          []interface{}
 	NoTransaction bool
-	IsMeta        bool
+	IsSystem      bool
 }
 
 func (o *SQLExecStep) Execute(ctx ExecCtx) error {
@@ -42,7 +42,7 @@ func (o *SQLExecStep) Print(ctx PrintCtx) {
 	if !ctx.PrintSQL || o.Query == "" {
 		return
 	}
-	if o.IsMeta && !ctx.PrintMetaSQL {
+	if o.IsSystem && !ctx.PrintSystemSQL {
 		return
 	}
 	ctx.Output.Println(strings.TrimSpace(o.Query))
@@ -117,7 +117,7 @@ func (o TransactionIfAllowed) Print(ctx PrintCtx) {
 		return
 	}
 
-	doPrint := ctx.PrintMetaSQL && o.AllowsTransaction()
+	doPrint := ctx.PrintSystemSQL && o.AllowsTransaction()
 	if doPrint {
 		ctx.Output.Println("BEGIN;")
 	}

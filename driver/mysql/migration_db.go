@@ -53,8 +53,8 @@ CREATE TABLE IF NOT EXISTS %s (
 
 func (o *migrationDB) CreateTableIfNotExists() (migrate.Step, error) {
 	return &migrate.SQLExecStep{
-		Query:  fmt.Sprintf(createTableQuery, o.tableName),
-		IsMeta: true,
+		Query:    fmt.Sprintf(createTableQuery, o.tableName),
+		IsSystem: true,
 	}, nil
 }
 
@@ -63,16 +63,16 @@ const forwardMigrateQuery = `INSERT INTO %s (name, time) VALUES (?, ?) ON DUPLIC
 func (o *migrationDB) ForwardMigrate(migrationName string) (migrate.Step, error) {
 	now := time.Now().UTC()
 	return &migrate.SQLExecStep{
-		Query:  fmt.Sprintf(forwardMigrateQuery, o.tableName),
-		Args:   []interface{}{migrationName, now, now},
-		IsMeta: true,
+		Query:    fmt.Sprintf(forwardMigrateQuery, o.tableName),
+		Args:     []interface{}{migrationName, now, now},
+		IsSystem: true,
 	}, nil
 }
 
 func (o *migrationDB) BackwardMigrate(migrationName string) (migrate.Step, error) {
 	return &migrate.SQLExecStep{
-		Query:  fmt.Sprintf(`DELETE FROM %s WHERE name = ?;`, o.tableName),
-		Args:   []interface{}{migrationName},
-		IsMeta: true,
+		Query:    fmt.Sprintf(`DELETE FROM %s WHERE name = ?;`, o.tableName),
+		Args:     []interface{}{migrationName},
+		IsSystem: true,
 	}, nil
 }

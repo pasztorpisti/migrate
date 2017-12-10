@@ -12,14 +12,14 @@ type CmdHackInput struct {
 	Forward     bool
 	MigrationID string
 
-	Force    bool
-	UserOnly bool
-	MetaOnly bool
+	Force      bool
+	UserOnly   bool
+	SystemOnly bool
 }
 
 func CmdHack(input *CmdHackInput) error {
-	if input.UserOnly && input.MetaOnly {
-		return errors.New("the UserOnly and MetaOnly parameters are exclusive")
+	if input.UserOnly && input.SystemOnly {
+		return errors.New("the UserOnly and SystemOnly parameters are exclusive")
 	}
 
 	if input.MigrationID == Initial || input.MigrationID == Latest {
@@ -87,7 +87,7 @@ func CmdHack(input *CmdHackInput) error {
 	// Dealing with user tables.
 
 	var userStep Step
-	if !input.MetaOnly {
+	if !input.SystemOnly {
 		if !input.Force {
 			if input.Forward == hasForwardID {
 				input.Output.Println("Nothing to do according to the migrations table.")
@@ -115,7 +115,7 @@ func CmdHack(input *CmdHackInput) error {
 
 	// Dealing with the migrations table.
 
-	var metaStep Step
+	var systemStep Step
 	if !input.UserOnly {
 		if !input.Force {
 			if input.Forward == hasForwardID {
@@ -126,9 +126,9 @@ func CmdHack(input *CmdHackInput) error {
 		}
 
 		if input.Forward {
-			metaStep, err = mdb.ForwardMigrate(name)
+			systemStep, err = mdb.ForwardMigrate(name)
 		} else {
-			metaStep, err = mdb.BackwardMigrate(name)
+			systemStep, err = mdb.BackwardMigrate(name)
 		}
 		if err != nil {
 			return err
@@ -138,13 +138,13 @@ func CmdHack(input *CmdHackInput) error {
 	var step Step
 	switch {
 	case userStep == nil:
-		step = metaStep
-	case metaStep == nil:
+		step = systemStep
+	case systemStep == nil:
 		step = userStep
 	default:
 		step = TransactionIfAllowed{Steps{
 			userStep,
-			metaStep,
+			systemStep,
 		}}
 	}
 

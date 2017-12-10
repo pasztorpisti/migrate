@@ -1,12 +1,12 @@
 package migrate
 
 type CmdPlanInput struct {
-	Output       Printer
-	ConfigFile   string
-	DB           string
-	MigrationID  string
-	PrintSQL     bool
-	PrintMetaSQL bool
+	Output         Printer
+	ConfigFile     string
+	DB             string
+	MigrationID    string
+	PrintSQL       bool
+	PrintSystemSQL bool
 }
 
 func CmdPlan(input *CmdPlanInput) error {
@@ -21,9 +21,9 @@ func CmdPlan(input *CmdPlanInput) error {
 	}
 
 	steps.Print(PrintCtx{
-		Output:       input.Output,
-		PrintSQL:     input.PrintSQL || input.PrintMetaSQL,
-		PrintMetaSQL: input.PrintMetaSQL,
+		Output:         input.Output,
+		PrintSQL:       input.PrintSQL || input.PrintSystemSQL,
+		PrintSystemSQL: input.PrintSystemSQL,
 	})
 	return nil
 }
