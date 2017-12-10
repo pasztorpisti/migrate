@@ -115,6 +115,7 @@ func cmdInit(opts *migrateOptions, args []string) error {
 	}
 
 	return migrate.CmdInit(&migrate.CmdInitInput{
+		Output:     stdoutPrinter,
 		ConfigFile: opts.ConfigFile,
 		DB:         opts.DB,
 	})

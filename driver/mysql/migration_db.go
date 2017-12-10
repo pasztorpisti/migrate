@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS %s (
 );
 `
 
-func (o *migrationDB) CreateTableIfNotExists() (migrate.Step, error) {
+func (o *migrationDB) CreateTable() (migrate.Step, error) {
 	return &migrate.SQLExecStep{
 		Query:    fmt.Sprintf(createTableQuery, o.tableName),
 		IsSystem: true,

@@ -130,17 +130,17 @@ func (mr *MockMigrationDBMockRecorder) GetForwardMigrations(arg0 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetForwardMigrations", reflect.TypeOf((*MockMigrationDB)(nil).GetForwardMigrations), arg0)
 }
 
-// CreateTableIfNotExists mocks base method
-func (m *MockMigrationDB) CreateTableIfNotExists() (Step, error) {
-	ret := m.ctrl.Call(m, "CreateTableIfNotExists")
+// CreateTable mocks base method
+func (m *MockMigrationDB) CreateTable() (Step, error) {
+	ret := m.ctrl.Call(m, "CreateTable")
 	ret0, _ := ret[0].(Step)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateTableIfNotExists indicates an expected call of CreateTableIfNotExists
-func (mr *MockMigrationDBMockRecorder) CreateTableIfNotExists() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTableIfNotExists", reflect.TypeOf((*MockMigrationDB)(nil).CreateTableIfNotExists))
+// CreateTable indicates an expected call of CreateTable
+func (mr *MockMigrationDBMockRecorder) CreateTable() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTable", reflect.TypeOf((*MockMigrationDB)(nil).CreateTable))
 }
 
 // ForwardMigrate mocks base method
