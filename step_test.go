@@ -28,9 +28,9 @@ func TestSQLExecStep_Execute(t *testing.T) {
 		printer := NewMockPrinter(ctrl)
 
 		step := &SQLExecStep{
-			Query:  "fake query",
-			Args:   []interface{}{"str", 42},
-			IsMeta: false,
+			Query:    "fake query",
+			Args:     []interface{}{"str", 42},
+			IsSystem: false,
 		}
 		ctx := ExecCtx{
 			DB:     db,
@@ -48,9 +48,9 @@ func TestSQLExecStep_Execute(t *testing.T) {
 		printer := NewMockPrinter(ctrl)
 
 		step := &SQLExecStep{
-			Query:  "fake query",
-			Args:   []interface{}{"str", 42},
-			IsMeta: false,
+			Query:    "fake query",
+			Args:     []interface{}{"str", 42},
+			IsSystem: false,
 		}
 		ctx := ExecCtx{
 			DB:     db,
@@ -65,14 +65,14 @@ func TestSQLExecStep_Execute(t *testing.T) {
 }
 
 func TestSQLExecStep_Print(t *testing.T) {
-	t.Run("IsMeta=false PrintSQL=false", func(t *testing.T) {
+	t.Run("IsSystem=false PrintSQL=false", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		printer := NewMockPrinter(ctrl)
 
 		step := &SQLExecStep{
-			Query:  "fake query",
-			Args:   []interface{}{"str", 42},
-			IsMeta: false,
+			Query:    "fake query",
+			Args:     []interface{}{"str", 42},
+			IsSystem: false,
 		}
 		ctx := PrintCtx{
 			Output:   printer,
@@ -80,15 +80,15 @@ func TestSQLExecStep_Print(t *testing.T) {
 		}
 		step.Print(ctx)
 	})
-	t.Run("IsMeta=false PrintSQL=true", func(t *testing.T) {
+	t.Run("IsSystem=false PrintSQL=true", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		writer := NewMockWriter(ctrl)
 		printer := NewPrinter(writer)
 
 		step := &SQLExecStep{
-			Query:  "fake query",
-			Args:   []interface{}{"str", 42},
-			IsMeta: false,
+			Query:    "fake query",
+			Args:     []interface{}{"str", 42},
+			IsSystem: false,
 		}
 		ctx := PrintCtx{
 			Output:   printer,
@@ -99,34 +99,34 @@ func TestSQLExecStep_Print(t *testing.T) {
 
 		step.Print(ctx)
 	})
-	t.Run("IsMeta=true PrintMetaSQL=false", func(t *testing.T) {
+	t.Run("IsSystem=true PrintSystemSQL=false", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		printer := NewMockPrinter(ctrl)
 
 		step := &SQLExecStep{
-			Query:  "fake query",
-			Args:   []interface{}{"str", 42},
-			IsMeta: true,
+			Query:    "fake query",
+			Args:     []interface{}{"str", 42},
+			IsSystem: true,
 		}
 		ctx := PrintCtx{
-			Output:       printer,
-			PrintMetaSQL: false,
+			Output:         printer,
+			PrintSystemSQL: false,
 		}
 		step.Print(ctx)
 	})
-	t.Run("IsMeta=true PrintMetaSQL=true", func(t *testing.T) {
+	t.Run("IsSystem=true PrintSystemSQL=true", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		writer := NewMockWriter(ctrl)
 		printer := NewPrinter(writer)
 
 		step := &SQLExecStep{
-			Query:  "fake query",
-			Args:   []interface{}{"str", 42},
-			IsMeta: true,
+			Query:    "fake query",
+			Args:     []interface{}{"str", 42},
+			IsSystem: true,
 		}
 		ctx := PrintCtx{
-			Output:       printer,
-			PrintMetaSQL: true,
+			Output:         printer,
+			PrintSystemSQL: true,
 		}
 
 		writer.EXPECT().Write(gomock.Any()).MinTimes(1)

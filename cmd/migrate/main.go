@@ -166,7 +166,7 @@ func cmdGoto(opts *migrateOptions, args []string) error {
 	})
 }
 
-const planUsage = `Usage: migrate plan [-sql] [-meta] <migration_id>
+const planUsage = `Usage: migrate plan [-sql] [-sys] <migration_id>
 
 Print a plan without modifying the database.
 
@@ -192,7 +192,7 @@ func cmdPlan(opts *migrateOptions, args []string) error {
 		log.Print(planUsageArgs)
 	}
 	sql := fs.Bool("sql", false, "Log the migration SQL statements (those that modify user tables).")
-	meta := fs.Bool("meta", false, "Log all SQL statements including those that modify the migrations table. Implies -sql.")
+	sys := fs.Bool("sys", false, "Log all SQL statements including those that modify the migrations table. Implies -sql.")
 	fs.Parse(args)
 
 	if fs.NArg() != 1 {
@@ -205,12 +205,12 @@ func cmdPlan(opts *migrateOptions, args []string) error {
 	migrationID := fs.Arg(0)
 
 	return migrate.CmdPlan(&migrate.CmdPlanInput{
-		Output:       stdoutPrinter,
-		ConfigFile:   opts.ConfigFile,
-		DB:           opts.DB,
-		MigrationID:  migrationID,
-		PrintSQL:     *sql,
-		PrintMetaSQL: *meta,
+		Output:         stdoutPrinter,
+		ConfigFile:     opts.ConfigFile,
+		DB:             opts.DB,
+		MigrationID:    migrationID,
+		PrintSQL:       *sql,
+		PrintSystemSQL: *sys,
 	})
 }
 
@@ -239,17 +239,17 @@ func cmdStatus(opts *migrateOptions, args []string) error {
 	})
 }
 
-const hackUsage = `Usage: migrate hack [-force] [-useronly|-metaonly] <forward|backward> <migration_id>
+const hackUsage = `Usage: migrate hack [-force] [-useronly|-sysonly] <forward|backward> <migration_id>
 
 Forward- or backward-migrate a single step specified by <migration_id>.
 Useful for troubleshooting.
 
-It executes two set of SQL statements:
+It executes two sets of SQL statements:
 
 1. SQL that forward or backward migrates user tables.
-2. SQL that updates the migration metadata accordingly.
+2. SQL that updates the migrations table (system data) used by this tool.
 
-You can use the -useronly or -metaonly options to execute only one of these.
+You can use the -useronly or -sysonly options to execute only one of these.
 
 Options:
 `
@@ -271,9 +271,9 @@ func cmdHack(opts *migrateOptions, args []string) error {
 		fs.PrintDefaults()
 		log.Print(hackUsageArgs)
 	}
-	force := fs.Bool("force", false, "Skip checking the migration metadata for the current state of <migration_id>.")
+	force := fs.Bool("force", false, "Skip checking the migration system data for the current state of <migration_id>.")
 	useronly := fs.Bool("useronly", false, "Skip the execution of SQL that modifies the migrations table.")
-	metaonly := fs.Bool("metaonly", false, "Skip the execution of SQL that modifies the user tables.")
+	sysonly := fs.Bool("sysonly", false, "Skip the execution of SQL that modifies the user tables.")
 	fs.Parse(args)
 
 	if fs.NArg() != 2 {
@@ -298,8 +298,8 @@ func cmdHack(opts *migrateOptions, args []string) error {
 		os.Exit(1)
 	}
 
-	if *useronly && *metaonly {
-		log.Print("The -useronly and -metaonly options are exclusive.")
+	if *useronly && *sysonly {
+		log.Print("The -useronly and -sysonly options are exclusive.")
 		fs.Usage()
 		os.Exit(1)
 	}
@@ -312,7 +312,7 @@ func cmdHack(opts *migrateOptions, args []string) error {
 		MigrationID: migrationID,
 		Force:       *force,
 		UserOnly:    *useronly,
-		MetaOnly:    *metaonly,
+		SystemOnly:  *sysonly,
 	})
 }
 
