@@ -21,7 +21,7 @@ Migrate Options:
             Default: %s
 
 Commands:
-  new       Create a new migration file.
+  new       Create a new migration file or squash existing ones.
   init      Create the migrations table in the DB if not exists.
   goto      Migrate to a specific version of the DB schema.
   plan      Print the plan that would be executed by a goto command.
@@ -132,7 +132,8 @@ Options:
 const gotoUsageArgs = `
 Args:
   <migration_id>
-        This is either the name of a migration file or it's integer prefix.
+        This is either the name of a forward migration file or its
+        numeric id (with or without zero prefix).
         It can also be one of the following special values:
 
         initial      Backward migrates everything.
@@ -177,7 +178,8 @@ Options:
 const planUsageArgs = `
 Args:
   <migration_id>
-        This is either the name of a migration file or it's integer prefix.
+        This is either the name of a forward migration file or its
+        numeric id (with or without zero prefix).
         It can also be one of the following special values:
 
         initial      Backward migrates everything.
@@ -261,7 +263,8 @@ Args:
         Select the direction in which the given <migration_id> will be migrated.
 
   <migration_id>
-        This is either the name of a migration file or it's integer prefix.
+        This is either the name of a forward migration file or its
+        numeric id (with or without zero prefix).
 
 `
 
