@@ -14,10 +14,10 @@ commandline tool are considered to be stable.
 
 ## Installation
 
-```bash
-go get -u github.com/pasztorpisti/migrate/cmd/...
-migrate -help
-```
+Download the latest stable binary release from
+[the releases page](https://github.com/pasztorpisti/migrate/releases).
+
+Run `migrate -help` for commandline options.
 
 ## Usage
 
@@ -27,25 +27,31 @@ Create a `migrate.yml` config file somewhere in your project repo:
 
 ```yaml
 dev:
-  # DB driver: can be postgres or mysql
-  driver: postgres
+  db:
+    # DB driver: can be postgres or mysql
+    driver: postgres
+    # The name of the migrations table. Optional, default value: 'migrations'
+    migrations_table: my_migrations
 
-  # DB driver specific connection parameters.
-  # In case of mysql it looks like this: user@tcp(localhost:3306)/db_name
-  #
-  # Mysql data_source format: https://github.com/go-sql-driver/mysql#dsn-data-source-name
-  # Postgres data_source format: https://godoc.org/github.com/lib/pq
-  data_source: postgres://steve@localhost:5432/postgres?sslmode=disable
+    # DB driver specific connection parameters.
+    # In case of mysql it looks like this: user@tcp(localhost:3306)/db_name
+    #
+    # Mysql data_source format: https://github.com/go-sql-driver/mysql#dsn-data-source-name
+    # Postgres data_source format: https://godoc.org/github.com/lib/pq
+    data_source: 'postgres://steve@localhost:5432/postgres?sslmode=disable'
 
-  # migration_source is the percent encoded relative or absolute path to the
-  # directory that contains the migration files.
-  # A relative path is relative to the parent dir of this config file.
-  migration_source: migrations
+  migration_source:
+    # The relative or absolute path to the directory that contains the migration files.
+    # A relative path is relative to the parent dir of this config file.
+    path: migrations
 
 prod:
-  driver: postgres
-  data_source: postgres://service@localhost:5432/postgres
-  migration_source: migrations
+  db:
+    driver: postgres
+    migrations_table: my_migrations
+    data_source: 'postgres://service@localhost:5432/postgres'
+  migration_source:
+    path: migrations
 ```
 
 The above config defines two database settings: `dev` and `prod`.

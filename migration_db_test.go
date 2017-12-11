@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestRegisterDriver(t *testing.T) {
+func TestRegisterDriverFactory(t *testing.T) {
 	t.Run("Register duplicate driver name", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		df := NewMockDriverFactory(ctrl)
@@ -48,7 +48,7 @@ func TestRegisterDriver(t *testing.T) {
 	})
 }
 
-func TestGetDriver(t *testing.T) {
+func TestGetDriverFactory(t *testing.T) {
 	t.Run("Get existing driver", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		df := NewMockDriverFactory(ctrl)

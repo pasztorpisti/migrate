@@ -33,7 +33,7 @@ func (m *MockDriverFactory) EXPECT() *MockDriverFactoryMockRecorder {
 }
 
 // NewDriver mocks base method
-func (m *MockDriverFactory) NewDriver(params string) (Driver, error) {
+func (m *MockDriverFactory) NewDriver(params map[string]string) (Driver, error) {
 	ret := m.ctrl.Call(m, "NewDriver", params)
 	ret0, _ := ret[0].(Driver)
 	ret1, _ := ret[1].(error)

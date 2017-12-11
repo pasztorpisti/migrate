@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pasztorpisti/migrate"
-	"net/url"
 )
 
 func init() {
@@ -14,15 +13,22 @@ func init() {
 
 type driverFactory struct{}
 
-func (o driverFactory) NewDriver(params string) (migrate.Driver, error) {
-	values, err := url.ParseQuery(params)
-	if err != nil {
-		return nil, fmt.Errorf("can't parse driver parameters %q: %s", params, err)
+func (o driverFactory) NewDriver(params map[string]string) (migrate.Driver, error) {
+	takeParam := func(key string) (string, bool) {
+		val, ok := params[key]
+		if ok {
+			delete(params, key)
+		}
+		return val, ok
 	}
 
-	tableName := values.Get("migrations_table")
-	if tableName == "" {
+	tableName, ok := takeParam("migrations_table")
+	if !ok || tableName == "" {
 		tableName = "migrations"
+	}
+
+	if len(params) != 0 {
+		return nil, fmt.Errorf("unrecognised driver params: %q", params)
 	}
 
 	return &driver{

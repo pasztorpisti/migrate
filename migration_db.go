@@ -6,7 +6,7 @@ import (
 )
 
 type DriverFactory interface {
-	NewDriver(params string) (Driver, error)
+	NewDriver(params map[string]string) (Driver, error)
 }
 
 type Driver interface {

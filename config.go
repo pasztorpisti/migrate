@@ -10,42 +10,20 @@ import (
 )
 
 type dbConfig struct {
-	Driver          string `yaml:"driver"`
-	DriverParams    string `yaml:"driver_params"`
-	DataSource      string `yaml:"data_source"`
-	MigrationSource string `yaml:"migration_source"`
+	Driver       string
+	DriverParams map[string]string
+	DataSource   string
+
+	MigrationSourceType   string
+	MigrationSourceParams map[string]string
 }
 
 func (o *dbConfig) Validate() error {
-	if o.Driver == "" {
-		return errors.New("driver must be set")
-	}
-	if _, ok := GetDriver(o.Driver); !ok {
-		return fmt.Errorf("invalid DB driver: %s", o.Driver)
-	}
-
-	if o.MigrationSource == "" {
-		return errors.New("migration_source must be set")
-	}
-
-	ms, err := performSubstitution(o.MigrationSource)
-	if err != nil {
-		return fmt.Errorf("error substituting template parameters to migration_source %q: %s", o.MigrationSource, err)
-	}
-	o.MigrationSource = ms
-
 	dsn, err := performSubstitution(o.DataSource)
 	if err != nil {
-		return fmt.Errorf("error substituting template parameters to data_source %q: %s", o.DataSource, err)
+		return fmt.Errorf("error substituting template parameters to db.data_source %q: %s", o.DataSource, err)
 	}
 	o.DataSource = dsn
-
-	dp, err := performSubstitution(o.DriverParams)
-	if err != nil {
-		return fmt.Errorf("error substituting template parameters to driver_params %q: %s", o.DriverParams, err)
-	}
-	o.DriverParams = dp
-
 	return nil
 }
 
@@ -69,13 +47,53 @@ func loadConfigFile(filename string) (map[string]*dbConfig, error) {
 		return nil, err
 	}
 
-	var cfg map[string]*dbConfig
+	type section struct {
+		DB              map[string]string `yaml:"db"`
+		MigrationSource map[string]string `yaml:"migration_source"`
+	}
+	var cfg map[string]*section
 	err = yaml.UnmarshalStrict(b, &cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return cfg, err
+	section2DBConfig := func(s *section) (*dbConfig, error) {
+		driver, ok := s.DB["driver"]
+		if !ok {
+			return nil, errors.New("missing db.driver field")
+		}
+		delete(s.DB, "driver")
+
+		dsn, ok := s.DB["data_source"]
+		if !ok {
+			return nil, errors.New("missing db.data_source field")
+		}
+		delete(s.DB, "data_source")
+
+		mst, ok := s.MigrationSource["type"]
+		if !ok {
+			mst = "dir"
+		}
+		delete(s.MigrationSource, "type")
+
+		return &dbConfig{
+			Driver:                driver,
+			DriverParams:          s.DB,
+			DataSource:            dsn,
+			MigrationSourceType:   mst,
+			MigrationSourceParams: s.MigrationSource,
+		}, nil
+	}
+
+	res := make(map[string]*dbConfig, len(cfg))
+	for name, sect := range cfg {
+		dbc, err := section2DBConfig(sect)
+		if err != nil {
+			return nil, fmt.Errorf("error loading section %q from config: %s", name, err)
+		}
+		res[name] = dbc
+	}
+	return res, err
 }
 
 func loadAndValidateDBConfig(configFilename, db string) (*dbConfig, error) {

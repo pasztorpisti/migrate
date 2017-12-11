@@ -1,7 +1,11 @@
 package migrate
 
+type MigrationSourceFactory interface {
+	NewMigrationSource(baseDir string, params map[string]string) (MigrationSource, error)
+}
+
 type MigrationSource interface {
-	MigrationEntries(configLocation, migrationSource string) (MigrationEntries, error)
+	MigrationEntries() (MigrationEntries, error)
 }
 
 type MigrationEntries interface {
@@ -13,25 +17,25 @@ type MigrationEntries interface {
 	New(args []string) (name string, err error)
 }
 
-var GetMigrationSource = sourceRegistry.GetMigrationSource
-var RegisterMigrationSource = sourceRegistry.RegisterMigrationSource
+var GetMigrationSourceFactory = sourceRegistry.GetMigrationSourceFactory
+var RegisterMigrationSourceFactory = sourceRegistry.RegisterMigrationSourceFactory
 
-var sourceRegistry = make(sourceMap)
+var sourceRegistry = make(sourceFactoryMap)
 
-type sourceMap map[string]MigrationSource
+type sourceFactoryMap map[string]MigrationSourceFactory
 
-func (o sourceMap) GetMigrationSource(name string) (s MigrationSource, ok bool) {
-	s, ok = o[name]
+func (o sourceFactoryMap) GetMigrationSourceFactory(name string) (f MigrationSourceFactory, ok bool) {
+	f, ok = o[name]
 	return
 }
 
-func (o sourceMap) RegisterMigrationSource(name string, s MigrationSource) {
+func (o sourceFactoryMap) RegisterMigrationSourceFactory(name string, f MigrationSourceFactory) {
 	_, ok := o[name]
 	if ok {
 		panic("duplicate migration source name: " + name)
 	}
-	if s == nil {
+	if f == nil {
 		panic("migration source is nil")
 	}
-	o[name] = s
+	o[name] = f
 }
