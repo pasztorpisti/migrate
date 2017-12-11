@@ -85,5 +85,9 @@ func CmdStatus(input *CmdStatusInput) error {
 		input.Output.Printf("!!! Invalid name in migrations table: %s\n", name)
 	}
 
+	if numMigrations == 0 && len(invalidNames) == 0 {
+		input.Output.Println("There are no migrations.")
+	}
+
 	return nil
 }
