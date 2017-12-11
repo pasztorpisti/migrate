@@ -1,10 +1,19 @@
 # migrate [![build-status](https://travis-ci.org/pasztorpisti/migrate.svg?branch=master)](https://travis-ci.org/pasztorpisti/migrate)
 
 Cross-platform SQL schema migration tool (cli).
-Currently supports postgresql and mysql.
 
-It is written in golang so it can be used easily as a go migration library but
-that is strongly discouraged.
+Features:
+
+- Supported databases:
+  - postgresql
+  - mysql
+- Keeping forward and backward migrations either in one file or separate files
+  (configurable)
+- Squashing existing migrations to a single migration file
+  (or 2 migration files if you store forward and backward migrations separately)
+
+Written in golang so it can be used easily as a go migration library but that is
+strongly discouraged.
 Running a migrate operation from a service at startup time is a bad practice for many reasons.
 Instead run the commandline migration tool from the CI/CD pipeline before deploying the service.
 
@@ -62,7 +71,12 @@ migrate new "initial migration"
 The above command creates a `<migrations_dir>/0001_initial_migration.sql` file.
 The filename can be different if you specify a `filename_pattern` in the config.
 
-Edit the migration file. In my example I create two simple tables:
+Edit the migration file. In my example I create two simple tables.
+
+By default the forward and backward migrations go to the same file (with annotations).
+You can store the forward and backward migrations in separate files by using a
+custom `filename_pattern` in the config file. Read the related instructions in
+the config file (created by the `migrate config` command).
 
 ```sql
 -- +migrate forward
