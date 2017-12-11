@@ -21,7 +21,7 @@ Migrate Options:
             Default: %s
 
 Commands:
-  config    Print a config file template to stdout.
+  config    Create a default config file if not exists.
   init      Create the migrations table in the DB if not exists.
   new       Create a new migration file or squash existing ones.
   goto      Migrate to a specific version of the DB schema.
@@ -185,15 +185,16 @@ prod:
 # command which uses '-db dev' as a default.
 `
 
-const configUsage = `Usage: migrate config
+const configUsage = `Usage: migrate config [filename]
 
-Prints a config template to stdout.
-You can redirect the output to a config file. E.g.:
+Creates a default config file with help/instrutions in it.
+Does nothing and returns with error if the given file already exists.
 
-    migrate config > migrate.yml
+The default [filename] is 'migrate.yml'. If you create the config with a
+different filename then you always have run the ` + "`" + `migrate` + "`" + ` command
+with the ` + "`" + `-config <your_config_filename>` + "`" + ` option.
 
-The default config filename is 'migrate.yml'. If you use a different
-filename then you have to specify it with the -config option of migrate.
+Use '-' as the [filename] to print the config template to stdout.
 `
 
 func cmdConfig(opts *migrateOptions, args []string) error {
@@ -204,13 +205,35 @@ func cmdConfig(opts *migrateOptions, args []string) error {
 	}
 	fs.Parse(args)
 
-	if fs.NArg() != 0 {
+	if fs.NArg() > 1 {
 		log.Printf("Unwanted extra arguments: %q", fs.Args())
 		fs.Usage()
 		os.Exit(1)
 	}
 
-	fmt.Print(configTemplate)
+	fn := "migrate.yml"
+	if fs.NArg() >= 1 {
+		fn = fs.Arg(0)
+	}
+
+	if fn == "-" {
+		fmt.Print(configTemplate)
+		return nil
+	}
+
+	f, err := os.OpenFile(fn, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		return fmt.Errorf("Error creating config file %q: %s", fn, err.(*os.PathError).Err)
+	}
+	_, err = f.Write([]byte(configTemplate))
+	if err2 := f.Close(); err == nil {
+		err = err2
+	}
+	if err != nil {
+		return fmt.Errorf("Error writing config file %q: %s", fn, err)
+	}
+
+	fmt.Println("Created migrate config file: " + fn)
 	return nil
 }
 
