@@ -2,374 +2,428 @@ package dir
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/pasztorpisti/migrate"
 	"io/ioutil"
-	"log"
-	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
-	"time"
+	"unicode"
 )
 
+const defaultFilenamePattern = "[id][description,prefix:_].sql"
+
 func init() {
-	migrate.RegisterMigrationSource("dir", source{})
+	migrate.RegisterMigrationSourceFactory("dir", &sourceFactory{})
 }
 
-type source struct{}
+type sourceFactory struct{}
 
-func (source) MigrationEntries(configLocation, migrationSource string) (migrate.MigrationEntries, error) {
-	parsed, err := parseMigrationSourceString(configLocation, migrationSource)
-	if err != nil {
-		return nil, err
-	}
-	return newEntries(parsed)
-}
-
-func newEntries(p *parsedMigrationSourceString) (migrate.MigrationEntries, error) {
-	st, err := os.Stat(p.MigrationsDir)
-	if err != nil {
-		return nil, fmt.Errorf("error reading migrations directory %q: %s", p.MigrationsDir, err)
-	}
-	if !st.IsDir() {
-		return nil, fmt.Errorf("%q isn't a directory", p.MigrationsDir)
-	}
-
-	items, err := p.loadMigrationsDir()
-	if err != nil {
-		return nil, err
-	}
-
-	e := &entries{
-		Params: p,
-		Items:  items,
-	}
-	e.updateMaps()
-	return e, nil
-}
-
-type entries struct {
-	Params  *parsedMigrationSourceString
-	Items   []*entry
-	Names   map[string]*entry
-	Indexes map[string]int
-}
-
-func (o *entries) updateMaps() {
-	o.Names = make(map[string]*entry, len(o.Items)*2)
-	o.Indexes = make(map[string]int, len(o.Items)*2)
-	for i, item := range o.Items {
-		for _, name := range item.MigrationID.Names {
-			o.Names[name] = item
-			o.Indexes[name] = i
+func (sourceFactory) NewMigrationSource(baseDir string, params map[string]string) (migrate.MigrationSource, error) {
+	takeParam := func(key string) (string, bool) {
+		val, ok := params[key]
+		if ok {
+			delete(params, key)
 		}
-		o.Names[item.Forward.Name] = item
-		o.Indexes[item.Forward.Name] = i
-	}
-}
-
-func (o *entries) NumMigrations() int {
-	return len(o.Items)
-}
-
-func (o *entries) Name(index int) string {
-	return o.Items[index].Forward.Name
-}
-
-func (o *entries) Steps(index int) (forward, backward migrate.Step, err error) {
-	e := o.Items[index]
-	return e.Forward.Step, e.Backward.Step, nil
-}
-
-func (o *entries) IndexForName(name string) (index int, ok bool) {
-	index, ok = o.Indexes[name]
-	return
-}
-
-func (o *entries) AllowsPastMigrations() bool {
-	return o.Params.AllowPastMigrations
-}
-
-const newUsageFmtStr = `Usage: migrate new [-squashed] %s
-
-Creates a new migration file in the migration_dir specified in the config file.
-
-The new filename is CONCATENATE(generated_numeric_id, space, description, ".sql").
-After generating the filename spaces are replaced with '_'.
-
-E.g.:
-The following command: migrate new "my first migration"
-Results in something like: 0001_my_first_migration.sql
-
-After creation you can rename the file to whatever you like before forward
-migrating it. After forward migration you mustn't rename it.
-The only requirement is that it has to start with a non-negative integer
-that is uniqe among your migration files. It can be left padded with zeros.
-E.g.: "0", "00012", "432134", "1_migration" and "1.sql" are all valid filenames.
-
-You don't have to pad the numbers with leading zeros to ensure correct migration
-ordering because sorting uses the parsed integer values instead of the filenames.
-However, zero padding is useful because it helps to keep your filenames sorted
-when you list them (ls) in alphabetical order.
-
-Options:
-`
-
-func (o *entries) New(args []string) (name string, err error) {
-	fp := o.Params.FilenamePattern
-
-	fs := flag.NewFlagSet("new", flag.ExitOnError)
-	fs.Usage = func() {
-		descriptionParam := ""
-		if fp.HasDescription {
-			if fp.OptionalDescription {
-				descriptionParam = "[description]"
-			} else {
-				descriptionParam = "<description>"
-			}
-		}
-		log.Printf(newUsageFmtStr, descriptionParam)
-		fs.PrintDefaults()
-	}
-	squashed := fs.Bool("squashed", false, "Create a squashed migration from the existing ones.")
-	fs.Parse(args)
-
-	description := ""
-	if fp.HasDescription {
-		if fs.NArg() > 1 {
-			log.Printf("Unwanted extra arguments: %q", fs.Args()[1:])
-			fs.Usage()
-			os.Exit(1)
-		}
-		hasDescription := fs.NArg() >= 1
-		if !hasDescription && !fp.OptionalDescription {
-			fs.Usage()
-			os.Exit(1)
-		}
-		description = fs.Arg(0)
-	} else {
-		if fs.NArg() > 0 {
-			log.Printf("Unwanted extra arguments: %q", fs.Args())
-			fs.Usage()
-			os.Exit(1)
-		}
+		return val, ok
 	}
 
-	if !fp.OptionalDescription && description == "" {
-		return "", errors.New("you have to provide a non-empty description")
+	path, ok := takeParam("path")
+	if !ok {
+		return nil, errors.New("missing path parameter")
 	}
 
-	if *squashed {
-		return o.createSquashedMigrationFile(description)
-	}
-
-	return o.createEmptyMigrationFile(description)
-}
-
-const singleFileMigrationTemplate = `-- +migrate forward
-
--- TODO: Append the "notransaction" flag (without quotes) to the
---       above "+migrate forward" directive if you want to execute
---       your SQL outside of a transaction.
-
--- TODO: Implement forward migration. (required)
-
--- +migrate backward
-
--- TODO: Append the "notransaction" flag (without quotes) to the
---       above "+migrate backward" directive if you want to execute
---       your SQL outside of a transaction.
-
--- TODO: Implement backward migration. (optional)
---       As an alternative you can delete the whole '+migrate backward'
---       block because implementing backward migration is optinoal.
-`
-
-const multiFileMigrationTemplate = `-- TODO: Add the "-- +migrate notransaction" single line comment (without quotes)
---       to the header of this file if you want to execute your SQL outside of a
---       transaction.
-
--- TODO: add SQL statements
-`
-
-func (o *entries) createEmptyMigrationFile(description string) (name string, err error) {
-	fp := o.Params.FilenamePattern
-
-	id := int64(1)
-	if !fp.IDSequence {
-		id = time.Now().Unix()
-	}
-	if len(o.Items) > 0 {
-		latestID := o.Items[len(o.Items)-1].MigrationID.Number
-		if id <= latestID {
-			id = latestID + 1
-		}
-	}
-
-	writeFile := func(path, contents string) error {
-		err = ioutil.WriteFile(path, []byte(contents), 0644)
-		if err != nil {
-			return fmt.Errorf("error writing file %q", path)
-		}
-
-		fmt.Printf("Created %s\n", path)
-		return nil
-	}
-
-	// We don't update entries.Items because after this operation the
-	// migrate tool exits anyway.
-
-	if fp.HasDirection {
-		// forward
-		fwdFilename := fp.FormatFilename(id, description, true)
-		fwdPath := filepath.Join(o.Params.MigrationsDir, fwdFilename)
-		err := writeFile(fwdPath, multiFileMigrationTemplate)
-		if err != nil {
-			return "", err
-		}
-
-		// backward
-		backFilename := fp.FormatFilename(id, description, false)
-		backPath := filepath.Join(o.Params.MigrationsDir, backFilename)
-		err = writeFile(backPath, multiFileMigrationTemplate)
-		if err != nil {
-			return "", err
-		}
-
-		return fwdFilename, nil
-	} else {
-		filename := fp.FormatFilename(id, description, false)
-		path := filepath.Join(o.Params.MigrationsDir, filename)
-		err := writeFile(path, singleFileMigrationTemplate)
-		if err != nil {
-			return "", err
-		}
-		return filename, nil
-	}
-}
-
-func (o *entries) createSquashedMigrationFile(description string) (name string, err error) {
-	if len(o.Items) == 0 {
-		return "", errors.New("there is nothing to squash")
-	}
-
-	var fwdLines []string
-	for i, e := range o.Items {
-		if i != 0 {
-			fwdLines = append(fwdLines, "")
-		}
-		fwdLines = append(fwdLines, "-- +migrate squashed "+e.Forward.Name, "")
-		if e.Forward.MigrateDirective != "" {
-			fwdLines = append(fwdLines, e.Forward.MigrateDirective)
-		}
-		fwdLines = append(fwdLines, e.Forward.Step.Query)
-	}
-
-	var backLines []string
-	for i := len(o.Items) - 1; i >= 0; i-- {
-		if i != len(o.Items)-1 {
-			backLines = append(backLines, "")
-		}
-		e := o.Items[i]
-		backLines = append(backLines, "-- +migrate squashed "+e.Backward.Name, "")
-		if e.Backward.MigrateDirective != "" {
-			backLines = append(backLines, e.Backward.MigrateDirective)
-		}
-		backLines = append(backLines, e.Backward.Step.Query)
-	}
-
-	id := o.Items[len(o.Items)-1].MigrationID.Number
-
-	deleteOrigFiles := func() error {
-		// needed to filter duplicate paths
-		pathMap := make(map[string]struct{}, len(o.Items)*2)
-		// contains unique path names sorted by ID
-		paths := make([]string, 0, len(o.Items)*2)
-		for _, e := range o.Items {
-			if e.Forward != nil {
-				if _, ok := pathMap[e.Forward.Path]; !ok {
-					pathMap[e.Forward.Path] = struct{}{}
-					paths = append(paths, e.Forward.Path)
-				}
-			}
-			if e.Backward != nil {
-				if _, ok := pathMap[e.Backward.Path]; !ok {
-					pathMap[e.Backward.Path] = struct{}{}
-					paths = append(paths, e.Backward.Path)
-				}
-			}
-		}
-
-		for _, path := range paths {
-			if err := os.Remove(path); err != nil {
-				return fmt.Errorf("error deleting %q: %s", path, err)
-			}
-		}
-		return nil
-	}
-
-	if o.Params.FilenamePattern.HasDirection {
-		// forward and backward migrations go to separate files
-		fwdFilename := o.Params.FilenamePattern.FormatFilename(id, description, true)
-		backFilename := o.Params.FilenamePattern.FormatFilename(id, description, false)
-
-		fwdPath := filepath.Join(o.Params.MigrationsDir, fwdFilename)
-		backPath := filepath.Join(o.Params.MigrationsDir, backFilename)
-
-		fwdSquashedPath := fwdPath + ".squash.tmp"
-		backSquashedPath := backPath + ".squash.tmp"
-
-		err = ioutil.WriteFile(fwdSquashedPath, []byte(strings.Join(fwdLines, "\n")), 0644)
-		if err != nil {
-			return "", fmt.Errorf("error writing %q: %s", fwdSquashedPath, err)
-		}
-
-		if len(backLines) > 0 {
-			err = ioutil.WriteFile(backSquashedPath, []byte(strings.Join(backLines, "\n")), 0644)
+	// ensuring that migrationsDir is absolute
+	if !filepath.IsAbs(path) {
+		if !filepath.IsAbs(baseDir) {
+			a, err := filepath.Abs(baseDir)
 			if err != nil {
-				return "", fmt.Errorf("error writing %q: %s", backSquashedPath, err)
+				return nil, err
 			}
+			baseDir = a
 		}
-
-		if err := deleteOrigFiles(); err != nil {
-			return "", err
-		}
-
-		// renaming the temporary squashed sql files to their final name
-		if err := os.Rename(fwdSquashedPath, fwdPath); err != nil {
-			return "", fmt.Errorf("error renaming %q to %q: %s", fwdSquashedPath, fwdPath, err)
-		}
-		if len(backLines) > 0 {
-			if err := os.Rename(backSquashedPath, backPath); err != nil {
-				return "", fmt.Errorf("error renaming %q to %q: %s", backSquashedPath, backPath, err)
-			}
-		}
-
-		return fwdFilename, nil
+		path = filepath.Join(baseDir, path)
 	}
 
-	// forward and backward migrations go to the same file
+	allowPastMigrations := false
+	if s, ok := takeParam("allow_past_migrations"); ok {
+		b, err := strconv.ParseBool(s)
+		if err != nil {
+			return nil, fmt.Errorf("invalid allow_past_migrations value: %q", s)
+		}
+		allowPastMigrations = b
+	}
 
-	filename := o.Params.FilenamePattern.FormatFilename(id, description, true)
-	path := filepath.Join(o.Params.MigrationsDir, filename)
-	squashedPath := path + ".squash.tmp"
-
-	contents := strings.Join(append(append(fwdLines, ""), backLines...), "\n")
-
-	err = ioutil.WriteFile(squashedPath, []byte(contents), 0644)
+	filenamePattern, ok := takeParam("filename_pattern")
+	if !ok {
+		filenamePattern = defaultFilenamePattern
+	}
+	pfp, err := parseFilenamePattern(filenamePattern)
 	if err != nil {
-		return "", fmt.Errorf("error writing %q: %s", squashedPath, err)
+		return nil, fmt.Errorf("invalid filename_pattern: %s", err)
 	}
 
-	if err := deleteOrigFiles(); err != nil {
-		return "", err
+	if len(params) != 0 {
+		return nil, fmt.Errorf("unrecognised migration_source params: %q", params)
 	}
 
-	// renaming the temporary squashed sql file to its final name
-	if err := os.Rename(squashedPath, path); err != nil {
-		return "", fmt.Errorf("error renaming %q to %q: %s", squashedPath, path, err)
+	return &source{
+		MigrationsDir:       path,
+		FilenamePattern:     pfp,
+		AllowPastMigrations: allowPastMigrations,
+	}, nil
+}
+
+type source struct {
+	MigrationsDir       string
+	FilenamePattern     *parsedFilenamePattern
+	AllowPastMigrations bool
+}
+
+func (o *source) MigrationEntries() (migrate.MigrationEntries, error) {
+	return newEntries(o)
+}
+
+type entry struct {
+	MigrationID migrationID
+	Forward     *step
+	Backward    *step
+}
+
+func (o *source) loadMigrationsDir() ([]*entry, error) {
+	files, err := ioutil.ReadDir(o.MigrationsDir)
+	if err != nil {
+		return nil, err
 	}
 
-	return filename, nil
+	entryMap := make(map[int64]*entry, len(files))
+	for _, item := range files {
+		if item.IsDir() {
+			continue
+		}
+
+		path := filepath.Join(o.MigrationsDir, item.Name())
+		fwdSteps, backSteps, err := o.loadMigrationFile(path)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, fwdStep := range fwdSteps {
+			e, ok := entryMap[fwdStep.ParsedName.ID.Number]
+			if !ok {
+				entryMap[fwdStep.ParsedName.ID.Number] = &entry{
+					MigrationID: fwdStep.ParsedName.ID,
+					Forward:     fwdStep,
+				}
+				continue
+			}
+
+			if e.Forward != nil {
+				return nil, fmt.Errorf("duplicate forward step - %s, %s", e.Forward, fwdStep)
+			}
+			e.Forward = fwdStep
+		}
+
+		for _, backStep := range backSteps {
+			e, ok := entryMap[backStep.ParsedName.ID.Number]
+			if !ok {
+				entryMap[backStep.ParsedName.ID.Number] = &entry{
+					MigrationID: backStep.ParsedName.ID,
+					Backward:    backStep,
+				}
+				continue
+			}
+
+			if e.Backward != nil {
+				return nil, fmt.Errorf("duplicate backward step - %s, %s", e.Backward, backStep)
+			}
+			e.Backward = backStep
+		}
+	}
+
+	entryList := make([]*entry, 0, len(entryMap))
+	for _, e := range entryMap {
+		entryList = append(entryList, e)
+
+		if e.Forward == nil {
+			return nil, fmt.Errorf("backward migration without a forward step - %s", e.Backward)
+		}
+		if e.Backward != nil {
+			if !e.Backward.ParsedName.equals(e.Forward.ParsedName) {
+				return nil, fmt.Errorf("forward and backward migrations have different descriptions - %s, %s", e.Forward, e.Backward)
+			}
+		}
+	}
+
+	sort.Slice(entryList, func(i, j int) bool {
+		return entryList[i].MigrationID.Number < entryList[j].MigrationID.Number
+	})
+
+	return entryList, nil
+}
+
+type step struct {
+	// Path contains the absolute path to the file from which this migration
+	// step has been loaded. The name of the file can be different from the
+	// Name of the migration if Squashed==true.
+	Path     string
+	Squashed bool
+	// Name is the filename of the migration.
+	// If Squashed==true then Name is the name of the original file before squashing.
+	Name       string
+	ParsedName *parsedFilename
+
+	// MigrateDirective is the SQL comment line that contains the
+	// +migrate directive for this file. Empty string if there is no directive.
+	MigrateDirective string
+	Step             *migrate.SQLExecStep
+}
+
+func (o *step) String() string {
+	s := o.Name
+	if o.Squashed {
+		s += " squashed into " + filepath.Base(o.Path)
+	}
+	return s
+}
+
+var migrateStepDirectiveRegex = regexp.MustCompile(`^\s*--\s*\+migrate(\s+(.*?))?\s*$`)
+var migrateSquashedDirectiveRegex = regexp.MustCompile(`^\s*--\s*\+migrate\s+squashed\s+(.*?)\s*$`)
+
+func (o *source) loadMigrationFile(path string) (forward, backward []*step, err error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	lines := strings.Split(string(b), "\n")
+
+	// Find all lines that contain the '-- +migrate squash <name>' directive.
+	type squashDirective struct {
+		LineIdx int
+		Name    string
+	}
+	var squashDirectives []squashDirective
+	for i, line := range lines {
+		a := migrateSquashedDirectiveRegex.FindStringSubmatch(line)
+		if a == nil {
+			continue
+		}
+		name := a[1]
+		squashDirectives = append(squashDirectives, squashDirective{
+			LineIdx: i,
+			Name:    name,
+		})
+	}
+
+	if len(squashDirectives) == 0 {
+		// This is a file without '+migrate squash' directives.
+		// This means it has to contain exactly one '+migrate forward'
+		// directive and an optional '+migrate backward'.
+		fwdStep, backStep, err := o.loadStepPair(path, filepath.Base(path), lines, false)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error parsing migration from file %q: %s", path, err)
+		}
+		if fwdStep != nil {
+			forward = append(forward, fwdStep)
+		}
+		if backStep != nil {
+			backward = append(backward, backStep)
+		}
+		return forward, backward, nil
+	}
+
+	// This file might contain several migration files squashed together
+	// and marked/separated with '+migrate squashed <name>' directives.
+
+	indexes := append(squashDirectives, squashDirective{
+		LineIdx: len(lines),
+	})
+
+	for i, directive := range squashDirectives {
+		squashLines := lines[directive.LineIdx+1 : indexes[i+1].LineIdx]
+		if len(squashLines) > 0 && strings.TrimSpace(squashLines[0]) == "" {
+			squashLines = squashLines[1:]
+		}
+		if i+1 < len(squashDirectives) && len(squashLines) > 0 && strings.TrimSpace(squashLines[len(squashLines)-1]) == "" {
+			squashLines = squashLines[:len(squashLines)-1]
+		}
+
+		fwdStep, backStep, err := o.loadStepPair(path, directive.Name, squashLines, true)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error parsing squashed migration %q from file %q: %s", directive.Name, path, err)
+		}
+		if fwdStep != nil {
+			forward = append(forward, fwdStep)
+		}
+		if backStep != nil {
+			backward = append(backward, backStep)
+		}
+	}
+
+	return forward, backward, nil
+}
+
+// loadStepPair loads either a forward or a backward step, or both.
+// Name is either the name of the file that contains the given lines or the
+// squashed name.
+//
+// If the given migration is a squashed one then lines contains only those
+// lines that belong to the given squashed entry.
+//
+// When the filename pattern contains {direction} the given lines
+// don't have to contain a "+migrate" directive to specify a direction.
+// If they still have a "+migrate" directive then the direction in that has
+// to match the direction in the filename.
+func (o *source) loadStepPair(path, name string, lines []string, squashed bool) (forward, backward *step, err error) {
+	parsedFilename, err := o.FilenamePattern.ParseFilename(filepath.Base(path))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Find all lines that contain the '-- +migrate' directive.
+	type directive struct {
+		LineIdx int
+		Params  string
+	}
+	var directives []directive
+	for i, line := range lines {
+		m := migrateStepDirectiveRegex.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		directives = append(directives, directive{
+			LineIdx: i,
+			Params:  m[2],
+		})
+	}
+
+	newStep := func(migrateDirective string, s *migrate.SQLExecStep) (*step, error) {
+		parsedName, err := o.FilenamePattern.ParseFilename(name)
+		if err != nil {
+			return nil, err
+		}
+		return &step{
+			Path:             path,
+			Squashed:         squashed,
+			Name:             name,
+			ParsedName:       parsedName,
+			MigrateDirective: migrateDirective,
+			Step:             s,
+		}, nil
+	}
+
+	if len(directives) == 0 {
+		if o.FilenamePattern.HasDirection {
+			// The filename contains the migration direction so
+			// the "+migrate <forward|backward>" directive is optional.
+			step, err := newStep("", &migrate.SQLExecStep{
+				Query: strings.Join(lines, "\n"),
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			if parsedFilename.Forward {
+				return step, nil, nil
+			}
+			return nil, step, nil
+		}
+		return nil, nil, errors.New("couldn't find any +migrate directives")
+	}
+	if len(directives) > 2 {
+		return nil, nil, errors.New("too many (more than 2) +migrate directives")
+	}
+	indexes := append(directives, directive{
+		LineIdx: len(lines),
+	})
+
+	// Processing the found directives.
+	for i, d := range directives {
+		fwd, bwd, notransaction, err := parseDirectiveParams(d.Params)
+		if err != nil {
+			return nil, nil, fmt.Errorf("error parsing +migrate directive params: %s", err)
+		}
+
+		if o.FilenamePattern.HasDirection {
+			// If the filename contains the direction then the +migrate directive
+			// doesn't even have to specify it. However, if it specifies it then
+			// it has to be the same direction as in the filename.
+			if parsedFilename.Forward && bwd || !parsedFilename.Forward && fwd {
+				return nil, nil, fmt.Errorf("directive %q conflicts with migration direction in the containing filename", "+migrate "+d.Params)
+			}
+			// In case the +migrate directive doesn't specify the direction
+			// we initialise fwd because this variable is used to determine
+			// direction in the rest of the function.
+			fwd = parsedFilename.Forward
+		} else if !fwd && !bwd {
+			// The filename doesn't contain the direction. In such cases the
+			// +migrate directive has to specify it in the file but in this
+			// case that didn't happen.
+			return nil, nil, errors.New("either forward or backward has to be specified for this +migrate directive")
+		}
+
+		begin := indexes[i].LineIdx
+		end := indexes[i+1].LineIdx
+		step, err := newStep(lines[begin], &migrate.SQLExecStep{
+			Query:         strings.Join(lines[begin+1:end], "\n"),
+			NoTransaction: notransaction,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if fwd {
+			if forward != nil {
+				return nil, nil, errors.New(`duplicate "+migrate forward" directive`)
+			}
+			forward = step
+		} else {
+			if backward != nil {
+				return nil, nil, errors.New(`duplicate "+migrate backward" directive`)
+			}
+			backward = step
+		}
+	}
+
+	return forward, backward, nil
+}
+
+// TODO: create a direction enum
+func parseDirectiveParams(params string) (forward, backward, notransaction bool, err error) {
+	forward, backward, notransaction = false, false, false
+	for _, f := range strings.FieldsFunc(params, unicode.IsSpace) {
+		switch f {
+		case "backward":
+			if backward {
+				err = errors.New("duplicate backward flag")
+				return
+			}
+			if forward {
+				err = errors.New("backward and forward are exlusive")
+				return
+			}
+			backward = true
+		case "forward":
+			if forward {
+				err = errors.New("duplicate forward flag")
+				return
+			}
+			if backward {
+				err = errors.New("backward and forward are exlusive")
+				return
+			}
+			forward = true
+		case "notransaction":
+			if notransaction {
+				err = errors.New("duplicate notransaction flag")
+				return
+			}
+			notransaction = true
+		default:
+			err = fmt.Errorf("invalid parameter: %q", f)
+			return
+		}
+	}
+	return forward, backward, notransaction, nil
 }

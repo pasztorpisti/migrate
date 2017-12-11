@@ -1,6 +1,9 @@
 package migrate
 
-import "fmt"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 type CmdGotoInput struct {
 	Output      Printer
@@ -78,13 +81,17 @@ func preparePlanForCmd(input *preparePlanInput) (_ Steps, _ ClosableDB, retErr e
 		forwardNames[i] = m.Name
 	}
 
-	source, ok := GetMigrationSource("dir")
+	sourceFactory, ok := GetMigrationSourceFactory(cfg.MigrationSourceType)
 	if !ok {
-		panic("can't get migration source")
+		return nil, nil, fmt.Errorf("unknown migration_source type in config: %s", cfg.MigrationSourceType)
 	}
-	migrations, err := source.MigrationEntries(input.ConfigFile, cfg.MigrationSource)
+	source, err := sourceFactory.NewMigrationSource(filepath.Dir(input.ConfigFile), cfg.MigrationSourceParams)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSource, err)
+		return nil, nil, fmt.Errorf("error creating migration source: %s", err)
+	}
+	migrations, err := source.MigrationEntries()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSourceParams, err)
 	}
 
 	steps, err := Plan(&PlanInput{
