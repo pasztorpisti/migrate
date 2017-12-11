@@ -7,10 +7,14 @@ Features:
 - Supported databases:
   - postgresql
   - mysql
+- Migration files have plain SQL format. Some migration parameters (like the
+  `notransaction` flag) can be added to migration files as special single-line
+  SQL comments. E.g.: `-- +migrate notransaction`
 - Keeping forward and backward migrations either in one file or separate files
-  (configurable)
-- Squashing existing migrations to a single migration file
-  (or 2 migration files if you store forward and backward migrations separately)
+  (configurable).
+- Squashing existing migrations to a single file (or 2 files if you store
+  forward and backward migrations separately). Squashing is very useful if a DB
+  schema changes frequently and accumulates hundreds of migration files quickly.
 
 Written in golang so it can be used easily as a go migration library but that is
 strongly discouraged.
