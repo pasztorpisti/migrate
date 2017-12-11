@@ -1,13 +1,13 @@
-SHELL = /bin/bash
+SHELL = /bin/sh -e
 TAGS ?=
 
 all: check_go_fmt deps test build
 
 deps:
-	if [[ $$(uname) == "Linux" ]]; then \
+	if [ $$(uname) = "Linux" ]; then \
 		wget -q -O $${GOPATH}/bin/dep https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64; \
 		chmod +x $${GOPATH}/bin/dep; \
-	elif [[ $$(uname) == "Darwin" ]]; then \
+	elif [ $$(uname) = "Darwin" ]; then \
 		curl -s -L -o $${GOPATH}/bin/dep https://github.com/golang/dep/releases/download/v0.3.2/dep-darwin-amd64; \
 		chmod +x $${GOPATH}/bin/dep; \
 	else \
