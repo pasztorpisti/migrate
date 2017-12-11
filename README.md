@@ -1,4 +1,4 @@
-# migrate
+# migrate [![build-status](https://travis-ci.org/pasztorpisti/migrate.svg?branch=master)](https://travis-ci.org/pasztorpisti/migrate)
 
 Cross-platform SQL schema migration tool (cli).
 Currently supports postgresql and mysql.
