@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 const defaultFilenamePattern = "[id][description,prefix:_].sql"
@@ -185,7 +186,7 @@ func (o *step) String() string {
 	return s
 }
 
-var migrateStepDirectiveRegex = regexp.MustCompile(`^\s*--\s*\+migrate\s+(.*?)\s*$`)
+var migrateStepDirectiveRegex = regexp.MustCompile(`^\s*--\s*\+migrate(\s+(.*?))?\s*$`)
 var migrateSquashedDirectiveRegex = regexp.MustCompile(`^\s*--\s*\+migrate\s+squashed\s+(.*?)\s*$`)
 
 func (o *parsedMigrationSourceString) loadMigrationFile(path string) (forward, backward []*step, err error) {
@@ -286,12 +287,12 @@ func (o *parsedMigrationSourceString) loadStepPair(path, name string, lines []st
 	var directives []directive
 	for i, line := range lines {
 		m := migrateStepDirectiveRegex.FindStringSubmatch(line)
-		if len(m) != 2 {
+		if m == nil {
 			continue
 		}
 		directives = append(directives, directive{
 			LineIdx: i,
-			Params:  m[1],
+			Params:  m[2],
 		})
 	}
 
@@ -336,13 +337,27 @@ func (o *parsedMigrationSourceString) loadStepPair(path, name string, lines []st
 
 	// Processing the found directives.
 	for i, d := range directives {
-		fwd, notransaction, err := parseDirectiveParams(d.Params)
+		fwd, bwd, notransaction, err := parseDirectiveParams(d.Params)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error parsing +migrate directive params: %s", err)
 		}
 
-		if o.FilenamePattern.HasDirection && parsedFilename.Forward != fwd {
-			return nil, nil, fmt.Errorf("directive %q conflicts with migration direction in the containing filename", "+migrate "+d.Params)
+		if o.FilenamePattern.HasDirection {
+			// If the filename contains the direction then the +migrate directive
+			// doesn't even have to specify it. However, if it specifies it then
+			// it has to be the same direction as in the filename.
+			if parsedFilename.Forward && bwd || !parsedFilename.Forward && fwd {
+				return nil, nil, fmt.Errorf("directive %q conflicts with migration direction in the containing filename", "+migrate "+d.Params)
+			}
+			// In case the +migrate directive doesn't specify the direction
+			// we initialise fwd because this variable is used to determine
+			// direction in the rest of the function.
+			fwd = parsedFilename.Forward
+		} else if !fwd && !bwd {
+			// The filename doesn't contain the direction. In such cases the
+			// +migrate directive has to specify it in the file but in this
+			// case that didn't happen.
+			return nil, nil, errors.New("either forward or backward has to be specified for this +migrate directive")
 		}
 
 		begin := indexes[i].LineIdx
@@ -372,40 +387,40 @@ func (o *parsedMigrationSourceString) loadStepPair(path, name string, lines []st
 }
 
 // TODO: create a direction enum
-// TODO: make the direction parameter optional for +migrate directives
-// that are in files that define the direction in the filename.
-func parseDirectiveParams(params string) (forward, notransaction bool, err error) {
-	forward, backward, notransaction := false, false, false
-	for _, f := range strings.Split(params, " \t") {
+func parseDirectiveParams(params string) (forward, backward, notransaction bool, err error) {
+	forward, backward, notransaction = false, false, false
+	for _, f := range strings.FieldsFunc(params, unicode.IsSpace) {
 		switch f {
 		case "backward":
 			if backward {
-				return false, false, errors.New("duplicate backward flag")
+				err = errors.New("duplicate backward flag")
+				return
 			}
 			if forward {
-				return false, false, errors.New("backward and forward are exlusive")
+				err = errors.New("backward and forward are exlusive")
+				return
 			}
 			backward = true
 		case "forward":
 			if forward {
-				return false, false, errors.New("duplicate forward flag")
+				err = errors.New("duplicate forward flag")
+				return
 			}
 			if backward {
-				return false, false, errors.New("backward and forward are exlusive")
+				err = errors.New("backward and forward are exlusive")
+				return
 			}
 			forward = true
 		case "notransaction":
 			if notransaction {
-				return false, false, errors.New("duplicate notransaction flag")
+				err = errors.New("duplicate notransaction flag")
+				return
 			}
 			notransaction = true
 		default:
-			return false, false, fmt.Errorf("invalid parameter: %q", f)
+			err = fmt.Errorf("invalid parameter: %q", f)
+			return
 		}
 	}
-
-	if !forward && !backward {
-		return false, false, errors.New("either forward or backward has to be specified")
-	}
-	return forward, notransaction, nil
+	return forward, backward, notransaction, nil
 }
