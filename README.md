@@ -24,10 +24,10 @@ Run `migrate -help` for commandline options.
 ### 1. Create a config file
 
 ```bash
-migrate config > migrate.yml
+migrate config
 ```
 
-Edit the config by following the instructions in it.
+Edit the newly created `migrate.yml` file by following the instructions in it.
 
 The template config defines two database settings - `dev` and `prod` - but
 you can use any number of settings with user defined names.
@@ -36,13 +36,13 @@ If you don't use the `-db <name>` option then the default is `dev`.
 
 ### 2. Initialise migrations
 
-Initialise the database by creating a migrations table:
+Initialise the database by creating the migrations table:
 
 ```bash
 migrate init
 ```
 
-This has to be performed only once for a given DB.
+This has to be performed only once for a given DB. Executing it again is a no-op.
 
 ### 3. Create migration file(s)
 
@@ -52,15 +52,16 @@ Make sure that the migrations directory exists:
 mkdir -p <migrations_dir>
 ```
 
-Create an initial migration file. You can do this manually if you follow a few
-very simple rules but for now let's use the commandline tool:
+Create one or more migration files with the `migrate new` command and edit them.
+I create only one migration:
 
 ```bash
 migrate new "initial migration"
 ```
 
 The above command creates a `<migrations_dir>/0001_initial_migration.sql` file.
-The filename will be different if you specified a filename_pattern in the config.
+The filename can be different if you specify a `filename_pattern` in the config.
+
 Edit the migration file. In my example I create two simple tables:
 
 ```sql
