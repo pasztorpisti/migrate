@@ -24,9 +24,9 @@ Commands:
   config    Create a default config file if not exists.
   init      Create the migrations table in the DB if not exists.
   new       Create a new migration file or squash existing ones.
-  goto      Migrate to a specific version of the DB schema.
-  plan      Print the plan that would be executed by a goto command.
   status    Print info about the current state of the migrations.
+  plan      Print the plan that would be executed by a goto command.
+  goto      Migrate to a specific version of the DB schema.
   hack      Manipulate a single migration step. Useful for troubleshooting.
   version   Print version info.
 
