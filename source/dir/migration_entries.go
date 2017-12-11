@@ -79,25 +79,15 @@ func (o *entries) AllowsPastMigrations() bool {
 
 const newUsageFmtStr = `Usage: migrate new [-squashed] %s
 
-Creates a new migration file in the migration_dir specified in the config file.
+Creates a new migration file in the migration directory specified
+in the config file. The name of the new file is controlled by the
+filename_pattern of the migration_source config.
 
-The new filename is CONCATENATE(generated_numeric_id, space, description, ".sql").
-After generating the filename spaces are replaced with '_'.
+The -squashed parameter deletes all existing migration files and squashes
+them into the newly created migration.
 
-E.g.:
-The following command: migrate new "my first migration"
-Results in something like: 0001_my_first_migration.sql
-
-After creation you can rename the file to whatever you like before forward
-migrating it. After forward migration you mustn't rename it.
-The only requirement is that it has to start with a non-negative integer
-that is uniqe among your migration files. It can be left padded with zeros.
-E.g.: "0", "00012", "432134", "1_migration" and "1.sql" are all valid filenames.
-
-You don't have to pad the numbers with leading zeros to ensure correct migration
-ordering because sorting uses the parsed integer values instead of the filenames.
-However, zero padding is useful because it helps to keep your filenames sorted
-when you list them (ls) in alphabetical order.
+Without the -squashed parameter it creates a new empty template migration file
+that has a new ID.
 
 Options:
 `
