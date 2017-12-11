@@ -21,8 +21,9 @@ Migrate Options:
             Default: %s
 
 Commands:
-  new       Create a new migration file or squash existing ones.
+  config    Print a config file template to stdout.
   init      Create the migrations table in the DB if not exists.
+  new       Create a new migration file or squash existing ones.
   goto      Migrate to a specific version of the DB schema.
   plan      Print the plan that would be executed by a goto command.
   status    Print info about the current state of the migrations.
@@ -43,8 +44,9 @@ type migrateOptions struct {
 }
 
 var commands = map[string]func(opts *migrateOptions, args []string) error{
-	"new":     cmdNew,
+	"config":  cmdConfig,
 	"init":    cmdInit,
+	"new":     cmdNew,
 	"goto":    cmdGoto,
 	"plan":    cmdPlan,
 	"status":  cmdStatus,
@@ -85,6 +87,132 @@ func main() {
 }
 
 var stdoutPrinter = migrate.NewPrinter(os.Stdout)
+
+const configTemplate = `dev:
+  db:
+    # DB driver: can be postgres or mysql
+    driver: postgres
+
+    # DB driver specific connection parameters.
+    # In case of mysql it looks like this: user@tcp(localhost:3306)/db_name
+    #
+    # Mysql data_source format: https://github.com/go-sql-driver/mysql#dsn-data-source-name
+    # Postgres data_source format: https://godoc.org/github.com/lib/pq
+    data_source: 'postgres://steve@localhost:5432/postgres?sslmode=disable'
+
+    # The name of the migrations table. Optional, default value: migrations
+    #migrations_table: migrations
+
+  migration_source:
+    # The relative or absolute path to the directory that contains the migration files.
+    # A relative path is relative to the parent dir of this config file.
+    path: migrations
+
+    # The filename pattern of the SQL migration files. It is a template string
+    # with a few placeholders. Each placeholder consists of a name and
+    # zero or more key:value pairs. E.g.: '[id]' or '[id,key1=val1,key2=val2]'
+    #
+    # You can use the following placeholders:
+    #
+    # [id,generate:<type>,width:<width>]
+    #
+    #       The numeric ID of the migration file. The parameters are used by the
+    #       ` + "`" + `migrate new` + "`" + ` command to generate and format a new ID.
+    #
+    #       The generate:<type> parameter can be generate:sequence or
+    #       generate:unix_time. Default: generate:sequence
+    #
+    #       The <width> parameter can be a number between 1 and 50. Default: 4
+    #       It controls the zero padding of the ID. Zero padding isn't needed
+    #       by the migrate tool but it looks better especially when your tools
+    #       list the migration files in alphabetical order.
+    #
+    #       The id placeholder is required.
+    #
+    # [direction,forward:<forward>,backward:<backward>]
+    #
+    #       The direction of the migration formatted into the filename.
+    #       This placeholder is optional. If you put it to the filename pattern
+    #       then your forward and backward migrations will be split into separate
+    #       files. Not using this placeholder means that the backward and
+    #       forward part of a migration go to a single file.
+    #
+    #       The forward:<forward> parameter defines what string to put into
+    #       the name of forward migration files. The backward:<backward> parameter
+    #       does the same for backward migration files.
+    #       Defaults: forward:forward backward:backward
+    #
+    # [description,space:<space>,prefix:<prefix>,suffix:<suffix>]
+    #
+    #       The description placeholder is optional. If you leave it out from
+    #       the filename pattern then you won't be able to add description into
+    #       the names of your migration files.
+    #
+    #       If you use the description placeholder without the prefix:<prefix>
+    #       and suffix:<suffix> parameters then the description in your migration
+    #       filenames will be required and has to be at least 1 character long.
+    #
+    #       If you specify at least one of the prefix or suffix parameters then
+    #       the description is optional in your filenames. The prefix and
+    #       suffix are glued to the description only when it is present.
+    #
+    #       The space:<space> parameter is used by the ` + "`" + `migrate new` + "`" + ` command
+    #       to replace space characters of the description to something more
+    #       filename friendly. E.g.: ` + "`" + `migrate new "my first description"` + "`" + `
+    #       would put "my_first_description" into the filename with space:_
+    #
+    #       Defaults: space:_ prefix: suffix:
+    #
+    # If you want to escape a special character (one of the []: characters) then
+    # prefix it with a backtick (` + "`" + `). You can escape the backtick too.
+    #
+    # The filename_pattern setting is optional.
+    # Default: '[id][description,prefix:_].sql'
+    #filename_pattern: '[id][description,prefix:_].[direction,forward:fw,backward:bw].sql'
+
+prod:
+  db:
+    driver: postgres
+    data_source: 'postgres://service@localhost:5432/postgres'
+    #migrations_table: migrations
+  migration_source:
+    path: migrations
+    #filename_pattern: '[id][description,prefix:_].[direction,forward:fw,backward:bw].sql'
+
+# TODO: copy-paste the above 'prod' DB settings as many times as you wish and
+# always rename the root (from 'prod' to something else, e.g.: 'staging', 'dev2').
+# You can refer to one of these blocks using the -db option of the migrate
+# command which uses '-db dev' as a default.
+`
+
+const configUsage = `Usage: migrate config
+
+Prints a config template to stdout.
+You can redirect the output to a config file. E.g.:
+
+    migrate config > migrate.yml
+
+The default config filename is 'migrate.yml'. If you use a different
+filename then you have to specify it with the -config option of migrate.
+`
+
+func cmdConfig(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("config", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(configUsage)
+		fs.PrintDefaults()
+	}
+	fs.Parse(args)
+
+	if fs.NArg() != 0 {
+		log.Printf("Unwanted extra arguments: %q", fs.Args())
+		fs.Usage()
+		os.Exit(1)
+	}
+
+	fmt.Print(configTemplate)
+	return nil
+}
 
 func cmdNew(opts *migrateOptions, args []string) error {
 	return migrate.CmdNew(&migrate.CmdNewInput{
