@@ -59,7 +59,8 @@ This has to be performed only once for a given DB. Executing it again is a no-op
 
 ### 3. Create migration file(s)
 
-Make sure that the migrations directory exists:
+Make sure that the `<migrations_dir>` exists.
+You can define it in the config file under the `migration_source.path` key.
 
 ```bash
 mkdir -p <migrations_dir>
