@@ -2,10 +2,6 @@ language: go
 go:
   - 1.9.2
 
-os:
-  - linux
-  - osx
-
 script:
   - make all
 
