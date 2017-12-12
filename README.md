@@ -12,6 +12,8 @@ Features:
   SQL comments. E.g.: `-- +migrate notransaction`
 - Keeping forward and backward migrations either in one file or separate files
   (configurable).
+- Plan command that applies migrations in "dry run" mode:
+  it only prints the operations without modifying the DB.
 - Squashing existing migrations to a single file (or 2 files if you store
   forward and backward migrations separately). Squashing is very useful if a DB
   schema changes frequently and accumulates hundreds of migration files quickly.
