@@ -32,8 +32,17 @@ type MigrationNameAndTime struct {
 	Time time.Time
 }
 
-var GetDriver = driverRegistry.GetDriverFactory
-var RegisterDriver = driverRegistry.RegisterDriverFactory
+func GetDriverFactory(name string) (d DriverFactory, ok bool) {
+	return driverRegistry.GetDriverFactory(name)
+}
+
+func RegisterDriverFactory(name string, d DriverFactory) {
+	driverRegistry.RegisterDriverFactory(name, d)
+}
+
+func SupportedDrivers() []string {
+	return driverRegistry.SupportedDrivers()
+}
 
 var driverRegistry = make(driverFactoryMap)
 
@@ -53,4 +62,12 @@ func (o driverFactoryMap) RegisterDriverFactory(name string, d DriverFactory) {
 		panic("driver is nil")
 	}
 	o[name] = d
+}
+
+func (o driverFactoryMap) SupportedDrivers() []string {
+	a := make([]string, 0, len(o))
+	for k := range o {
+		a = append(a, k)
+	}
+	return a
 }

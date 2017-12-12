@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	migrate.RegisterDriver("postgres", driverFactory{})
+	migrate.RegisterDriverFactory("postgres", driverFactory{})
 }
 
 type driverFactory struct{}

@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	migrate.RegisterDriver("mysql", driverFactory{})
+	migrate.RegisterDriverFactory("mysql", driverFactory{})
 }
 
 type driverFactory struct{}
