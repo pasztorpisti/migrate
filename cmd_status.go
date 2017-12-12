@@ -48,7 +48,7 @@ func CmdStatus(input *CmdStatusInput) error {
 	}
 	migrations, err := source.MigrationEntries()
 	if err != nil {
-		return fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSourceParams, err)
+		return fmt.Errorf("error loading migrations: %s", err)
 	}
 
 	forwardMigrations, err := mdb.GetForwardMigrations(db)

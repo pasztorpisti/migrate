@@ -91,7 +91,7 @@ func preparePlanForCmd(input *preparePlanInput) (_ Steps, _ ClosableDB, retErr e
 	}
 	migrations, err := source.MigrationEntries()
 	if err != nil {
-		return nil, nil, fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSourceParams, err)
+		return nil, nil, fmt.Errorf("error loading migrations: %s", err)
 	}
 
 	steps, err := Plan(&PlanInput{
