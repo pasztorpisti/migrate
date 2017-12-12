@@ -23,24 +23,24 @@ test:
 build: clean
 	mkdir build
 
-	GOOS=linux GOARCH=amd64 go build \
-		-ldflags "-X main.version=$${VERSION:-$${TRAVIS_TAG-}} -X main.gitHash=$${GIT_HASH:-$${TRAVIS_COMMIT-}} -X main.buildDate=$$(date +%F)" \
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a \
+		-ldflags "-extldflags \"-static\" -X main.version=$${VERSION:-$${TRAVIS_TAG-}} -X main.gitHash=$${GIT_HASH:-$${TRAVIS_COMMIT-}} -X main.buildDate=$$(date +%F)" \
 		-tags=$(TAGS) -o build/migrate github.com/pasztorpisti/migrate/cmd/migrate
 	cd build \
 		&& zip -q migrate-linux-amd64.zip migrate \
 		&& shasum -a 256 migrate migrate-linux-amd64.zip > migrate-linux-amd64.zip.sha256 \
 		&& rm migrate
 
-	GOOS=darwin GOARCH=amd64 go build \
-		-ldflags "-X main.version=$${VERSION:-$${TRAVIS_TAG-}} -X main.gitHash=$${GIT_HASH:-$${TRAVIS_COMMIT-}} -X main.buildDate=$$(date +%F)" \
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a \
+		-ldflags "-extldflags \"-static\" -X main.version=$${VERSION:-$${TRAVIS_TAG-}} -X main.gitHash=$${GIT_HASH:-$${TRAVIS_COMMIT-}} -X main.buildDate=$$(date +%F)" \
 		-tags=$(TAGS) -o build/migrate github.com/pasztorpisti/migrate/cmd/migrate
 	cd build \
 		&& zip -q migrate-darwin-amd64.zip migrate \
 		&& shasum -a 256 migrate migrate-darwin-amd64.zip > migrate-darwin-amd64.zip.sha256 \
 		&& rm migrate
 
-	GOOS=windows GOARCH=amd64 go build \
-		-ldflags "-X main.version=$${VERSION:-$${TRAVIS_TAG-}} -X main.gitHash=$${GIT_HASH:-$${TRAVIS_COMMIT-}} -X main.buildDate=$$(date +%F)" \
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a \
+		-ldflags "-extldflags \"-static\" -X main.version=$${VERSION:-$${TRAVIS_TAG-}} -X main.gitHash=$${GIT_HASH:-$${TRAVIS_COMMIT-}} -X main.buildDate=$$(date +%F)" \
 		-tags=$(TAGS) -o build/migrate.exe github.com/pasztorpisti/migrate/cmd/migrate
 	cd build \
 		&& zip -q migrate-windows-amd64.zip migrate.exe \
