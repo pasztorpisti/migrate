@@ -478,11 +478,28 @@ func cmdHack(opts *migrateOptions, args []string) error {
 	})
 }
 
+const versionUsage = `Usage: migrate version
+
+Shows the version and build information.
+`
+
 var version string
 var gitHash string
 var buildDate string
 
 func cmdVersion(opts *migrateOptions, args []string) error {
+	fs := flag.NewFlagSet("version", flag.ExitOnError)
+	fs.Usage = func() {
+		log.Print(versionUsage)
+	}
+	fs.Parse(args)
+
+	if fs.NArg() != 0 {
+		log.Printf("Unwanted extra arguments: %q", fs.Args())
+		fs.Usage()
+		os.Exit(1)
+	}
+
 	if version == "" {
 		version = "dev"
 	}
