@@ -2,6 +2,10 @@ language: go
 go:
   - 1.9.2
 
+os:
+  - linux
+  - osx
+
 script:
   - make all
 
@@ -12,6 +16,7 @@ deploy:
   skip_cleanup: true
   on:
     go: 1.9.2
+    condition: $TRAVIS_OS_NAME = linux
     repo: pasztorpisti/migrate
     tags: true
   file:
