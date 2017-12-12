@@ -48,7 +48,7 @@ func preparePlanForCmd(input *preparePlanInput) (_ Steps, _ ClosableDB, retErr e
 		return nil, nil, err
 	}
 
-	driverFactory, ok := GetDriver(cfg.Driver)
+	driverFactory, ok := GetDriverFactory(cfg.Driver)
 	if !ok {
 		return nil, nil, fmt.Errorf("invalid DB driver: %s", cfg.Driver)
 	}

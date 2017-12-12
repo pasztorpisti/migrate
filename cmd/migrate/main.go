@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"sort"
+	"strings"
 )
 
 const usage = `Usage: migrate [migrate_options] <command> [command_options] [command_args]
@@ -513,5 +515,9 @@ func cmdVersion(opts *migrateOptions, args []string) error {
 	fmt.Printf("go version  : %s\n", runtime.Version())
 	fmt.Printf("go compiler : %s\n", runtime.Compiler)
 	fmt.Printf("platform    : %s/%s\n", runtime.GOOS, runtime.GOARCH)
+
+	drivers := migrate.SupportedDrivers()
+	sort.Strings(drivers)
+	fmt.Printf("db drivers  : %s\n", strings.Join(drivers, ", "))
 	return nil
 }

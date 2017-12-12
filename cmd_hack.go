@@ -32,7 +32,7 @@ func CmdHack(input *CmdHackInput) error {
 		return err
 	}
 
-	driverFactory, ok := GetDriver(cfg.Driver)
+	driverFactory, ok := GetDriverFactory(cfg.Driver)
 	if !ok {
 		return fmt.Errorf("invalid DB driver: %s", cfg.Driver)
 	}
