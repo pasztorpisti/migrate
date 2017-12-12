@@ -98,6 +98,12 @@ const configTemplate = `dev:
     #
     # Mysql data_source format: https://github.com/go-sql-driver/mysql#dsn-data-source-name
     # Postgres data_source format: https://godoc.org/github.com/lib/pq
+    #
+    # You can interpolate environment variables by using {env:ENV_VAR_NAME}
+    # placeholders. Outside of the placeholders you have to escape/prefix the
+    # '{' and '\' characters with a backslash. Inside the placeholders you
+    # have to escape the ':', '}' and '\' characters when you want to lose
+    # their special meaning. Placeholders can't be nested.
     data_source: 'postgres://steve@localhost:5432/postgres?sslmode=disable'
 
     # The name of the migrations table. Optional, default value: migrations
@@ -166,14 +172,15 @@ const configTemplate = `dev:
     # If you want to escape a special character (one of the []: characters) then
     # prefix it with a backtick (` + "`" + `). You can escape the backtick too.
     #
-    # The filename_pattern setting is optional.
-    # Default: '[id][description,prefix:_].sql'
+    # It doesn't have to have .sql extension but adding it might be useful if
+    # your editor/IDE uses the extension to determine the file type.
+    # Optional. Default: '[id][description,prefix:_].sql'
     #filename_pattern: '[id][description,prefix:_].[direction,forward:fw,backward:bw].sql'
 
 prod:
   db:
     driver: postgres
-    data_source: 'postgres://service@localhost:5432/postgres'
+    data_source: 'postgres://{env:DB_USER}:{env:DB_PASSWORD}@{env:DB_HOST}:5432/postgres'
     #migrations_table: migrations
   migration_source:
     path: migrations
