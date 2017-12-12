@@ -27,7 +27,7 @@ func CmdNew(input *CmdNewInput) error {
 	}
 	migrations, err := source.MigrationEntries()
 	if err != nil {
-		return fmt.Errorf("error loading migrations from source %q: %s", cfg.MigrationSourceParams, err)
+		return fmt.Errorf("error loading migrations: %s", err)
 	}
 
 	_, err = migrations.New(input.Args)
