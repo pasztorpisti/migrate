@@ -1,11 +1,6 @@
 package migrate
 
-import (
-	"errors"
-	"fmt"
-)
-
-var ErrMissingPastMigrations = errors.New("there are unapplied migrations before the latest applied migration")
+import "fmt"
 
 const (
 	Initial = "initial"
@@ -13,8 +8,9 @@ const (
 )
 
 type PlanInput struct {
-	Migrations           MigrationEntries
-	ForwardMigratedNames []string
+	Migrations MigrationEntries
+	// ForwardMigrated has the length of Migrations.NumMigrations().
+	ForwardMigrated []bool
 	// Target is either the full name of a migration (file) or only it's prefix
 	// that is a non-negative integer.
 	// It can also be one of the following constants: Initial, Latest
@@ -24,29 +20,8 @@ type PlanInput struct {
 
 func Plan(input *PlanInput) (Steps, error) {
 	numMigrations := input.Migrations.NumMigrations()
-
-	forwardMigrated := make([]bool, numMigrations)
-	for _, name := range input.ForwardMigratedNames {
-		index, ok := input.Migrations.IndexForName(name)
-		// We don't accept aliases as forward migrated names.
-		// This is why we check for (name != input.Migrations.Name(index)).
-		if !ok || name != input.Migrations.Name(index) {
-			return nil, fmt.Errorf("can't find migration file for forward migrated item %q", name)
-		}
-		forwardMigrated[index] = true
-	}
-
-	if !input.Migrations.AllowsPastMigrations() {
-		allowForwardMigrated := true
-		for _, fm := range forwardMigrated {
-			if fm {
-				if !allowForwardMigrated {
-					return nil, ErrMissingPastMigrations
-				}
-			} else {
-				allowForwardMigrated = false
-			}
-		}
+	if len(input.ForwardMigrated) != numMigrations {
+		panic("len(forwardMigrated) != numMigrations")
 	}
 
 	// Finding the index of the target migration in the sorted item list.
@@ -68,7 +43,7 @@ func Plan(input *PlanInput) (Steps, error) {
 
 	// Backward-migrating items that are newer than the target item in reverse order.
 	for i := numMigrations - 1; i > targetIdx; i-- {
-		if !forwardMigrated[i] {
+		if !input.ForwardMigrated[i] {
 			continue
 		}
 		name := input.Migrations.Name(i)
@@ -97,7 +72,7 @@ func Plan(input *PlanInput) (Steps, error) {
 
 	// Forward-migrating items that are older than or equal to the target item.
 	for i := 0; i <= targetIdx; i++ {
-		if forwardMigrated[i] {
+		if input.ForwardMigrated[i] {
 			continue
 		}
 

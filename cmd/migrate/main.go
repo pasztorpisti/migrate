@@ -179,6 +179,28 @@ const configTemplate = `dev:
     # Optional. Default: '[id][description,prefix:_].sql'
     #filename_pattern: '[id][description,prefix:_].[direction,forward:fw,backward:bw].sql'
 
+  # If allow_migration_gaps==false (which is the default setting) then the plan
+  # and goto commands fail with an error message if there is at least one
+  # unapplied migration that is older (has smaller ID) than an applied migration.
+  #
+  # The easiest way to get into the previously described problematic situation
+  # is using unx_time as the migration ID that allows unused ID values between
+  # migrations. This can be problematic because switching between branches or
+  # merging someone else's work into your workspace might place an unapplied
+  # migration between two applied past migrations. Applying a past migration
+  # (a gap) like that is harmless if it touches the schema/data in a way that
+  # doesn't interfere/conflict with applied future migrations but you can never
+  # know when you handle the flattening of that dependency graph manually.
+  #
+  # Another way to open a gap (or close one) in the past is using the
+  # ` + "`" + `migrate hack` + "`" + ` command to unapply or apply migrations one-by-one.
+  #
+  # For the above reasons the default migration ID generation method uses a
+  # continuous sequence of integers starting from 1 and allow_migration_gaps=false.
+  #
+  # Optional. Default: false
+  #allow_migration_gaps: true
+
 prod:
   db:
     driver: postgres
@@ -406,6 +428,9 @@ const hackUsage = `Usage: migrate hack [-force] [-useronly|-sysonly] <forward|ba
 
 Forward- or backward-migrate a single step specified by <migration_id>.
 Useful for troubleshooting.
+
+Originally I wanted to call this command 'step' but decided to use 'hack' as a deterrent.
+If you have to use this command instead of goto then you are already in trouble.
 
 It executes two sets of SQL statements:
 

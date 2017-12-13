@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"unicode"
 )
@@ -47,15 +46,6 @@ func (sourceFactory) NewMigrationSource(baseDir string, params map[string]string
 		path = filepath.Join(baseDir, path)
 	}
 
-	allowPastMigrations := false
-	if s, ok := takeParam("allow_past_migrations"); ok {
-		b, err := strconv.ParseBool(s)
-		if err != nil {
-			return nil, fmt.Errorf("invalid allow_past_migrations value: %q", s)
-		}
-		allowPastMigrations = b
-	}
-
 	filenamePattern, ok := takeParam("filename_pattern")
 	if !ok {
 		filenamePattern = defaultFilenamePattern
@@ -70,16 +60,14 @@ func (sourceFactory) NewMigrationSource(baseDir string, params map[string]string
 	}
 
 	return &source{
-		MigrationsDir:       path,
-		FilenamePattern:     pfp,
-		AllowPastMigrations: allowPastMigrations,
+		MigrationsDir:   path,
+		FilenamePattern: pfp,
 	}, nil
 }
 
 type source struct {
-	MigrationsDir       string
-	FilenamePattern     *parsedFilenamePattern
-	AllowPastMigrations bool
+	MigrationsDir   string
+	FilenamePattern *parsedFilenamePattern
 }
 
 func (o *source) MigrationEntries() (migrate.MigrationEntries, error) {

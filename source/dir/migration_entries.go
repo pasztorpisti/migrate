@@ -73,10 +73,6 @@ func (o *entries) IndexForName(name string) (index int, ok bool) {
 	return
 }
 
-func (o *entries) AllowsPastMigrations() bool {
-	return o.Source.AllowPastMigrations
-}
-
 const newUsageFmtStr = `Usage: migrate new [-squashed] %s
 
 Creates a new migration file in the migration directory specified
