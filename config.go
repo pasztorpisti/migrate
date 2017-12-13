@@ -16,6 +16,7 @@ type dbConfig struct {
 
 	MigrationSourceType   string
 	MigrationSourceParams map[string]string
+	AllowMigrationGaps    bool
 }
 
 func (o *dbConfig) Validate() error {
@@ -48,8 +49,9 @@ func loadConfigFile(filename string) (map[string]*dbConfig, error) {
 	}
 
 	type section struct {
-		DB              map[string]string `yaml:"db"`
-		MigrationSource map[string]string `yaml:"migration_source"`
+		DB                 map[string]string `yaml:"db"`
+		MigrationSource    map[string]string `yaml:"migration_source"`
+		AllowMigrationGaps bool              `yaml:"allow_migration_gaps"`
 	}
 	var cfg map[string]*section
 	err = yaml.UnmarshalStrict(b, &cfg)
@@ -82,6 +84,7 @@ func loadConfigFile(filename string) (map[string]*dbConfig, error) {
 			DataSource:            dsn,
 			MigrationSourceType:   mst,
 			MigrationSourceParams: s.MigrationSource,
+			AllowMigrationGaps:    s.AllowMigrationGaps,
 		}, nil
 	}
 

@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 )
@@ -94,11 +95,35 @@ func preparePlanForCmd(input *preparePlanInput) (_ Steps, _ ClosableDB, retErr e
 		return nil, nil, fmt.Errorf("error loading migrations: %s", err)
 	}
 
+	forwardMigrated := make([]bool, migrations.NumMigrations())
+	for _, name := range forwardNames {
+		index, ok := migrations.IndexForName(name)
+		// We don't accept aliases as forward migrated names.
+		// This is why we check for (name != input.Migrations.Name(index)).
+		if !ok || name != migrations.Name(index) {
+			return nil, nil, fmt.Errorf("can't find migration file for forward migrated item %q", name)
+		}
+		forwardMigrated[index] = true
+	}
+
+	if !cfg.AllowMigrationGaps {
+		allowForwardMigrated := true
+		for _, fm := range forwardMigrated {
+			if fm {
+				if !allowForwardMigrated {
+					return nil, nil, errMigrationGap
+				}
+			} else {
+				allowForwardMigrated = false
+			}
+		}
+	}
+
 	steps, err := Plan(&PlanInput{
-		Migrations:           migrations,
-		ForwardMigratedNames: forwardNames,
-		Target:               input.MigrationID,
-		MigrationDB:          mdb,
+		Migrations:      migrations,
+		ForwardMigrated: forwardMigrated,
+		Target:          input.MigrationID,
+		MigrationDB:     mdb,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -110,3 +135,9 @@ func preparePlanForCmd(input *preparePlanInput) (_ Steps, _ ClosableDB, retErr e
 
 	return steps, db, nil
 }
+
+// errMigrationGap is an ugly error message.
+var errMigrationGap = errors.New(`There are gaps between the migrations that have already been applied so the plan
+and goto commands don't work because you don't have allow_migration_gaps=true
+in your config. You can still use other commands (e.g.: status, hack)
+or fix the DB and migrations manually if necessary.`)
