@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/pasztorpisti/migrate"
+	"github.com/pasztorpisti/migrate/core"
 	"log"
 	"os"
 	"runtime"
@@ -88,7 +88,7 @@ func main() {
 	}
 }
 
-var stdoutPrinter = migrate.NewPrinter(os.Stdout)
+var stdoutPrinter = core.NewPrinter(os.Stdout)
 
 const configTemplate = `dev:
   db:
@@ -269,7 +269,7 @@ func cmdConfig(opts *migrateOptions, args []string) error {
 }
 
 func cmdNew(opts *migrateOptions, args []string) error {
-	return migrate.CmdNew(&migrate.CmdNewInput{
+	return core.CmdNew(&core.CmdNewInput{
 		ConfigFile: opts.ConfigFile,
 		DB:         opts.DB,
 		Args:       args,
@@ -296,7 +296,7 @@ func cmdInit(opts *migrateOptions, args []string) error {
 		os.Exit(1)
 	}
 
-	return migrate.CmdInit(&migrate.CmdInitInput{
+	return core.CmdInit(&core.CmdInitInput{
 		Output:     stdoutPrinter,
 		ConfigFile: opts.ConfigFile,
 		DB:         opts.DB,
@@ -341,7 +341,7 @@ func cmdGoto(opts *migrateOptions, args []string) error {
 	}
 	migrationID := fs.Arg(0)
 
-	return migrate.CmdGoto(&migrate.CmdGotoInput{
+	return core.CmdGoto(&core.CmdGotoInput{
 		Output:      stdoutPrinter,
 		ConfigFile:  opts.ConfigFile,
 		DB:          opts.DB,
@@ -389,7 +389,7 @@ func cmdPlan(opts *migrateOptions, args []string) error {
 	}
 	migrationID := fs.Arg(0)
 
-	return migrate.CmdPlan(&migrate.CmdPlanInput{
+	return core.CmdPlan(&core.CmdPlanInput{
 		Output:         stdoutPrinter,
 		ConfigFile:     opts.ConfigFile,
 		DB:             opts.DB,
@@ -417,7 +417,7 @@ func cmdStatus(opts *migrateOptions, args []string) error {
 		os.Exit(1)
 	}
 
-	return migrate.CmdStatus(&migrate.CmdStatusInput{
+	return core.CmdStatus(&core.CmdStatusInput{
 		Output:     stdoutPrinter,
 		ConfigFile: opts.ConfigFile,
 		DB:         opts.DB,
@@ -493,7 +493,7 @@ func cmdHack(opts *migrateOptions, args []string) error {
 		os.Exit(1)
 	}
 
-	return migrate.CmdHack(&migrate.CmdHackInput{
+	return core.CmdHack(&core.CmdHackInput{
 		Output:      stdoutPrinter,
 		ConfigFile:  opts.ConfigFile,
 		DB:          opts.DB,
@@ -541,7 +541,7 @@ func cmdVersion(opts *migrateOptions, args []string) error {
 	fmt.Printf("go compiler : %s\n", runtime.Compiler)
 	fmt.Printf("platform    : %s/%s\n", runtime.GOOS, runtime.GOARCH)
 
-	drivers := migrate.SupportedDrivers()
+	drivers := core.SupportedDrivers()
 	sort.Strings(drivers)
 	fmt.Printf("db drivers  : %s\n", strings.Join(drivers, ", "))
 	return nil

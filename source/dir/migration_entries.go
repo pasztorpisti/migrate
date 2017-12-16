@@ -4,7 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/pasztorpisti/migrate"
+	"github.com/pasztorpisti/migrate/core"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func newEntries(src *source) (migrate.MigrationEntries, error) {
+func newEntries(src *source) (core.MigrationEntries, error) {
 	st, err := os.Stat(src.MigrationsDir)
 	if err != nil {
 		return nil, fmt.Errorf("error reading migrations directory %q: %s", src.MigrationsDir, err)
@@ -63,7 +63,7 @@ func (o *entries) Name(index int) string {
 	return o.Items[index].Forward.Name
 }
 
-func (o *entries) Steps(index int) (forward, backward migrate.Step, err error) {
+func (o *entries) Steps(index int) (forward, backward core.Step, err error) {
 	e := o.Items[index]
 	return e.Forward.Step, e.Backward.Step, nil
 }

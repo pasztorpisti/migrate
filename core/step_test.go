@@ -1,4 +1,4 @@
-package migrate
+package core
 
 import (
 	"github.com/golang/mock/gomock"

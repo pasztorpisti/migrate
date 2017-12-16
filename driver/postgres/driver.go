@@ -4,16 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
-	"github.com/pasztorpisti/migrate"
+	"github.com/pasztorpisti/migrate/core"
 )
 
 func init() {
-	migrate.RegisterDriverFactory("postgres", driverFactory{})
+	core.RegisterDriverFactory("postgres", driverFactory{})
 }
 
 type driverFactory struct{}
 
-func (o driverFactory) NewDriver(params map[string]string) (migrate.Driver, error) {
+func (o driverFactory) NewDriver(params map[string]string) (core.Driver, error) {
 	takeParam := func(key string) (string, bool) {
 		val, ok := params[key]
 		if ok {
@@ -40,14 +40,14 @@ type driver struct {
 	TableName string
 }
 
-func (*driver) Open(dataSourceName string) (migrate.ClosableDB, error) {
+func (*driver) Open(dataSourceName string) (core.ClosableDB, error) {
 	db, err := sql.Open("postgres", dataSourceName)
 	if err != nil {
 		return nil, fmt.Errorf("error opening postgres connection: %s", err)
 	}
-	return migrate.WrapDB(db), nil
+	return core.WrapDB(db), nil
 }
 
-func (o *driver) NewMigrationDB() (migrate.MigrationDB, error) {
+func (o *driver) NewMigrationDB() (core.MigrationDB, error) {
 	return newMigrationDB(o.TableName)
 }

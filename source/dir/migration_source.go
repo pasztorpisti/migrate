@@ -3,7 +3,7 @@ package dir
 import (
 	"errors"
 	"fmt"
-	"github.com/pasztorpisti/migrate"
+	"github.com/pasztorpisti/migrate/core"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -15,12 +15,12 @@ import (
 const defaultFilenamePattern = "[id][description,prefix:_].sql"
 
 func init() {
-	migrate.RegisterMigrationSourceFactory("dir", &sourceFactory{})
+	core.RegisterMigrationSourceFactory("dir", &sourceFactory{})
 }
 
 type sourceFactory struct{}
 
-func (sourceFactory) NewMigrationSource(baseDir string, params map[string]string) (migrate.MigrationSource, error) {
+func (sourceFactory) NewMigrationSource(baseDir string, params map[string]string) (core.MigrationSource, error) {
 	takeParam := func(key string) (string, bool) {
 		val, ok := params[key]
 		if ok {
@@ -70,7 +70,7 @@ type source struct {
 	FilenamePattern *parsedFilenamePattern
 }
 
-func (o *source) MigrationEntries() (migrate.MigrationEntries, error) {
+func (o *source) MigrationEntries() (core.MigrationEntries, error) {
 	return newEntries(o)
 }
 
@@ -166,7 +166,7 @@ type step struct {
 	// MigrateDirective is the SQL comment line that contains the
 	// +migrate directive for this file. Empty string if there is no directive.
 	MigrateDirective string
-	Step             *migrate.SQLExecStep
+	Step             *core.SQLExecStep
 }
 
 func (o *step) String() string {
@@ -287,7 +287,7 @@ func (o *source) loadStepPair(path, name string, lines []string, squashed bool) 
 		})
 	}
 
-	newStep := func(migrateDirective string, s *migrate.SQLExecStep) (*step, error) {
+	newStep := func(migrateDirective string, s *core.SQLExecStep) (*step, error) {
 		parsedName, err := o.FilenamePattern.ParseFilename(name)
 		if err != nil {
 			return nil, err
@@ -306,7 +306,7 @@ func (o *source) loadStepPair(path, name string, lines []string, squashed bool) 
 		if o.FilenamePattern.HasDirection {
 			// The filename contains the migration direction so
 			// the "+migrate <forward|backward>" directive is optional.
-			step, err := newStep("", &migrate.SQLExecStep{
+			step, err := newStep("", &core.SQLExecStep{
 				Query: strings.Join(lines, "\n"),
 			})
 			if err != nil {
@@ -353,7 +353,7 @@ func (o *source) loadStepPair(path, name string, lines []string, squashed bool) 
 
 		begin := indexes[i].LineIdx
 		end := indexes[i+1].LineIdx
-		step, err := newStep(lines[begin], &migrate.SQLExecStep{
+		step, err := newStep(lines[begin], &core.SQLExecStep{
 			Query:         strings.Join(lines[begin+1:end], "\n"),
 			NoTransaction: notransaction,
 		})
