@@ -1,4 +1,4 @@
-package migrate
+package core
 
 type MigrationSourceFactory interface {
 	NewMigrationSource(baseDir string, params map[string]string) (MigrationSource, error)

@@ -4,16 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
-	"github.com/pasztorpisti/migrate"
+	"github.com/pasztorpisti/migrate/core"
 )
 
 func init() {
-	migrate.RegisterDriverFactory("mysql", driverFactory{})
+	core.RegisterDriverFactory("mysql", driverFactory{})
 }
 
 type driverFactory struct{}
 
-func (o driverFactory) NewDriver(params map[string]string) (migrate.Driver, error) {
+func (o driverFactory) NewDriver(params map[string]string) (core.Driver, error) {
 	takeParam := func(key string) (string, bool) {
 		val, ok := params[key]
 		if ok {
@@ -40,7 +40,7 @@ type driver struct {
 	TableName string
 }
 
-func (*driver) Open(dataSourceName string) (migrate.ClosableDB, error) {
+func (*driver) Open(dataSourceName string) (core.ClosableDB, error) {
 	cfg, err := mysql.ParseDSN(dataSourceName)
 	if err != nil {
 		return nil, err
@@ -52,9 +52,9 @@ func (*driver) Open(dataSourceName string) (migrate.ClosableDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error opening mysql connection: %s", err)
 	}
-	return migrate.WrapDB(db), nil
+	return core.WrapDB(db), nil
 }
 
-func (o *driver) NewMigrationDB() (migrate.MigrationDB, error) {
+func (o *driver) NewMigrationDB() (core.MigrationDB, error) {
 	return newMigrationDB(o.TableName)
 }
