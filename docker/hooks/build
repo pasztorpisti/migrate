@@ -1,0 +1,27 @@
+#!/bin/bash
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+set -xeo pipefail
+
+# Currently we build only when the "github release publish" webhook fires.
+# This event can be catched with a branch==master filter on the build settings page.
+if [[ "${SOURCE_BRANCH}" = master ]]; then
+    # getting latest git tag
+    git pull --tags
+    GIT_TAG="$(git describe --tags "$(git rev-list --tags --max-count=1)")"
+else
+    >&2 echo "Unexpected SOURCE_BRANCH=${SOURCE_BRANCH}"
+    exit 1
+fi
+
+if [[ -z "${GIT_TAG}" ]]; then
+    >&2 echo "There is no git tag on current SOURCE_BRANCH=${SOURCE_BRANCH}"
+    exit 1
+fi
+
+git checkout "${GIT_TAG}"
+
+docker build \
+    --build-arg IMAGE_BUILD_TIME="$(date -u +%FT%TZ)" \
+    --build-arg MIGRATE_VERSION="${GIT_TAG}" \
+    -t "${IMAGE_NAME}" .
