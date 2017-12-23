@@ -1,3 +1,8 @@
+# \[DEPRECATED\]
+
+Instead of this use [ `github.com/pasztorpisti/sql-migrate`](https://github.com/pasztorpisti/sql-migrate).
+That tool is a much simpler but still has all necessary features found in this one.
+
 # migrate [![build-status](https://travis-ci.org/pasztorpisti/migrate.svg?branch=master)](https://travis-ci.org/pasztorpisti/migrate)
 
 Cross-platform SQL schema migration tool (cli).
@@ -113,68 +118,3 @@ After creating one or more migration files you can apply them to the DB:
 ```bash
 migrate goto latest
 ```
-
-## Design
-
-You have a list of migrations with some kind of strict ordering.
-This tool orders the migrations by their numeric ID: older migrations have
-smaller numeric IDs.
-
-A "bool flag" is stored in the database for each migration to remember
-which one has been applied (forward migrated).
-In the below example `[X]` means that the bool flag for the given migration is set:
-
-```
-$ migrate status
-[X] 0001.sql
-[ ] 0002.sql
-[X] 0003.sql
-[ ] 0004.sql
-[X] 0005.sql
-[X] 0006.sql
-[X] 0007.sql
-[ ] 0008.sql
-```
-
-This migration tool has a single most important operation: `migrate goto <target_migration>`.
-
-The `goto` operation selects a target migration and makes sure that:
-
-1. Migrations that are newer than the target migration and have been applied
-   (have `[X]`) are backward migrated in reverse/descending order.
-2. The target migration along with the migrations that are older than
-   the target are forward migrated in ascending order.
-   (Only those that haven't yet been applied and have `[ ]`.)
-
-Let's see the result of a `migrate goto 0005.sql` starting from the above state:
-
-```
-$ migrate goto 0005.sql
-backward-migrate 0007.sql ... OK
-backward-migrate 0006.sql ... OK
-forward-migrate 0002.sql ... OK
-forward-migrate 0004.sql ... OK
-
-$ migrate status
-[X] 0001.sql
-[X] 0002.sql
-[X] 0003.sql
-[X] 0004.sql
-[X] 0005.sql
-[ ] 0006.sql
-[ ] 0007.sql
-[ ] 0008.sql
-```
-
-## Just Another Migration Tool
-
-I was looking for a simple SQL migration tool written in golang and found two
-popular ones: [migrate](https://github.com/mattes/migrate)
-and [sql-migrate](https://github.com/rubenv/sql-migrate).
-
-I wanted something that works like the superb migration tool of the python-django
-framework and from the above two libraries `sql-migrate` was the closest.
-
-Initially I was thinking about bugfixing those tools but decided to roll my own
-after discovering serious design issues in their migration logic.
-You can fix a bug but bad design often requires a rewrite.
